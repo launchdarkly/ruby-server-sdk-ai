@@ -19,5 +19,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.required_ruby_version = ">= 3.0.0"
 
-  spec.add_runtime_dependency "launchdarkly-server-sdk", "~> 8.4.0"
+  spec.add_dependency "launchdarkly-server-sdk", "~> 8.4.0"
+  spec.add_dependency "logger"
 end
