@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
-require "ldclient-ai/ld_ai_client"
-require 'ldclient-ai/version'
 require 'logger'
+require 'mustache'
+
+require 'ldclient-ai/version'
+require 'ldclient-ai/ld_ai_client'
+require 'ldclient-ai/ld_ai_config_tracker'
 
 module LaunchDarkly
   #
