@@ -4,6 +4,7 @@ require 'ldclient-rb'
 
 module LaunchDarkly
   module AI
+    # The LDAIConfigTracker class is used to track AI configuration usage.
     class LDAIConfigTracker
       attr_reader :ld_client, :config_key, :context, :variation_key, :version
 
@@ -20,6 +21,8 @@ module LaunchDarkly
         @time_to_first_token = nil
       end
 
+      # Track the duration of an AI operation
+      # @param duration [Integer] The duration in milliseconds
       def track_duration(duration)
         @duration = duration
         @ld_client.track(
@@ -30,6 +33,9 @@ module LaunchDarkly
         )
       end
 
+      # Track the duration of a block of code
+      # @yield The block to measure
+      # @return The result of the block
       def track_duration_of
         start_time = Time.now
         result = yield
@@ -38,6 +44,8 @@ module LaunchDarkly
         result
       end
 
+      # Track user feedback
+      # @param kind [Symbol] The kind of feedback (:positive or :negative)
       def track_feedback(kind:)
         @feedback = kind
         event_name = kind == :positive ? '$ld:ai:feedback:user:positive' : '$ld:ai:feedback:user:negative'
@@ -49,6 +57,7 @@ module LaunchDarkly
         )
       end
 
+      # Track a successful AI generation
       def track_success
         @success = true
         @ld_client.track(
@@ -65,6 +74,7 @@ module LaunchDarkly
         )
       end
 
+      # Track an error in AI generation
       def track_error
         @success = false
         @ld_client.track(
@@ -81,6 +91,10 @@ module LaunchDarkly
         )
       end
 
+      # Track token usage
+      # @param total [Integer] Total number of tokens
+      # @param input [Integer] Number of input tokens
+      # @param output [Integer] Number of output tokens
       def track_tokens(total: nil, input: nil, output: nil)
         @tokens = { total: total, input: input, output: output }
         if total
@@ -109,6 +123,9 @@ module LaunchDarkly
         end
       end
 
+      # Track OpenAI metrics
+      # @yield The block to measure
+      # @return The result of the block
       def track_openai_metrics
         start_time = Time.now
         result = yield
@@ -128,6 +145,9 @@ module LaunchDarkly
         raise e
       end
 
+      # Track Bedrock metrics
+      # @yield The block to measure
+      # @return The result of the block
       def track_bedrock_metrics
         start_time = Time.now
         result = yield
@@ -143,6 +163,8 @@ module LaunchDarkly
         result
       end
 
+      # Track time to first token
+      # @param duration [Integer] The duration in milliseconds
       def track_time_to_first_token(duration)
         @time_to_first_token = duration
         @ld_client.track(
@@ -153,6 +175,8 @@ module LaunchDarkly
         )
       end
 
+      # Get a summary of all tracked metrics
+      # @return [Hash] A hash containing all tracked metrics
       def get_summary
         {
           duration: @duration,

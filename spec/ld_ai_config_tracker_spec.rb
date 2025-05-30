@@ -203,28 +203,28 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(result).to eq(openai_result)
     end
 
-    # it 'tracks error for failed operation' do
-    #   expect(ld_client).to receive(:track).with(
-    #     '$ld:ai:duration:total',
-    #     context,
-    #     { variationKey: 'test-variation', configKey: 'test-config' },
-    #     kind_of(Integer)
-    #   )
-    #   expect(ld_client).to receive(:track).with(
-    #     '$ld:ai:generation',
-    #     context,
-    #     { variationKey: 'test-variation', configKey: 'test-config' },
-    #     1
-    #   )
-    #   expect(ld_client).to receive(:track).with(
-    #     '$ld:ai:generation:error',
-    #     context,
-    #     { variationKey: 'test-variation', configKey: 'test-config' },
-    #     1
-    #   )
+    it 'tracks error for failed operation' do
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:duration:total',
+        context,
+        { variationKey: 'test-variation', configKey: 'test-config' },
+        kind_of(Integer)
+      )
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:generation',
+        context,
+        { variationKey: 'test-variation', configKey: 'test-config' },
+        1
+      )
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:generation:error',
+        context,
+        { variationKey: 'test-variation', configKey: 'test-config' },
+        1
+      )
 
-    #   expect { tracker.track_openai_metrics { raise 'test error' } }.to raise_error('test error')
-    # end
+      expect { tracker.track_openai_metrics { raise 'test error' } }.to raise_error('test error')
+    end
   end
 
   describe '#track_bedrock_metrics' do
@@ -280,21 +280,21 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
   end
 
   describe '#get_summary' do
-    # it 'returns a summary of tracked metrics' do
-    #   tracker.track_duration(100)
-    #   tracker.track_feedback(kind: :positive)
-    #   tracker.track_tokens(total: 100, input: 50, output: 50)
-    #   tracker.track_success
-    #   tracker.track_time_to_first_token(50)
+    it 'returns a summary of tracked metrics' do
+      tracker.track_duration(100)
+      tracker.track_feedback(kind: :positive)
+      tracker.track_tokens(total: 100, input: 50, output: 50)
+      tracker.track_success
+      tracker.track_time_to_first_token(50)
 
-    #   expect(tracker.get_summary).to eq({
-    #     duration: 100,
-    #     feedback: :positive,
-    #     tokens: { total: 100, input: 50, output: 50 },
-    #     success: true,
-    #     time_to_first_token: 50
-    #   })
-    # end
+      expect(tracker.get_summary).to eq({
+        duration: 100,
+        feedback: :positive,
+        tokens: { total: 100, input: 50, output: 50 },
+        success: true,
+        time_to_first_token: 50
+      })
+    end
 
     it 'returns nil for untracked metrics' do
       expect(tracker.get_summary).to eq({
