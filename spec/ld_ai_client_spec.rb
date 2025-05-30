@@ -4,15 +4,95 @@ require 'ldclient-rb'
 require 'ldclient-ai'
 
 RSpec.describe LaunchDarkly::AI::LDAIClient do
-  let(:td) { LaunchDarkly::Integrations::TestData.data_source() }
-  let(:config) { LaunchDarkly::Config.new({data_source: td}) }
-  let(:ld_client) { LaunchDarkly::LDClient.new('key', config) }
-  let(:ai_client) { described_class.new(ld_client) }
-  let(:default_config) { LaunchDarkly::AI::AIConfig.default }
+  let(:td) do
+    data_source = LaunchDarkly::Integrations::TestData.data_source
+    data_source.update(data_source.flag('model-config')
+      .variations(
+            {
+                'model': {'name': 'fakeModel', 'parameters': {'temperature': 0.5, 'maxTokens': 4096}, 'custom': {'extra-attribute': 'value'}},
+                'provider': {'name': 'fakeProvider'},
+                'messages': [{'role': 'system', 'content': 'Hello, {{name}}!'}],
+                '_ldMeta': {'enabled': true, 'variationKey': 'abcd', 'version': 1},
+            },
+            "green",
+        )
+        .variation_for_all(0))
 
-  before do
-    allow(ld_client).to receive(:is_a?).with(LaunchDarkly::LDClient).and_return(true)
+    data_source.update(data_source.flag('multiple-messages')
+      .variations(
+            {
+                'model': {'name': 'fakeModel', 'parameters': {'temperature': 0.7, 'maxTokens': 8192}},
+                'messages': [
+                    {'role': 'system', 'content': 'Hello, {{name}}!'},
+                    {'role': 'user', 'content': 'The day is, {{day}}!'},
+                ],
+                '_ldMeta': {'enabled': true, 'variationKey': 'abcd', 'version': 1},
+            },
+            "green",
+        )
+        .variation_for_all(0))
+
+    data_source.update(data_source.flag('ctx-interpolation')
+      .variations(
+            {
+                'model': {'name': 'fakeModel', 'parameters': {'extra-attribute': 'I can be anything I set my mind/type to'}},
+                'messages': [{'role': 'system', 'content': 'Hello, {{ldctx.name}}! Is your last name {{ldctx.last}}?'}],
+                '_ldMeta': {'enabled': true, 'variationKey': 'abcd', 'version': 1},
+            }
+        )
+        .variation_for_all(0))
+
+    data_source.update(data_source.flag('multi-ctx-interpolation')
+        .variations(
+            {
+                'model': {'name': 'fakeModel', 'parameters': {'extra-attribute': 'I can be anything I set my mind/type to'}},
+                'messages': [{'role': 'system', 'content': 'Hello, {{ldctx.user.name}}! Do you work for {{ldctx.org.shortname}}?'}],
+                '_ldMeta': {'enabled': true, 'variationKey': 'abcd', 'version': 1},
+            }
+        )
+        .variation_for_all(0))
+
+    data_source.update(data_source.flag('off-config')
+        .variations(
+            {
+                'model': {'name': 'fakeModel', 'parameters': {'temperature': 0.1}},
+                'messages': [{'role': 'system', 'content': 'Hello, {{name}}!'}],
+                '_ldMeta': {'enabled': false, 'variationKey': 'abcd', 'version': 1},
+            }
+        )
+        .variation_for_all(0))
+
+    data_source.update(data_source.flag('initial-config-disabled')
+        .variations(
+            {
+                '_ldMeta': {'enabled': false},
+            },
+            {
+                '_ldMeta': {'enabled': true},
+            }
+        )
+        .variation_for_all(0))
+
+    data_source.update(data_source.flag('initial-config-enabled')
+        .variations(
+            {
+                '_ldMeta': {'enabled': false},
+            },
+            {
+                '_ldMeta': {'enabled': true},
+            }
+        )
+        .variation_for_all(1))
+
+    data_source
   end
+
+  let(:sdk_key) { 'sdk-key' }
+  let(:config) { LaunchDarkly::Config.new(data_source: td) }
+  let(:ld_client) { LaunchDarkly::LDClient.new(sdk_key, config) }
+  let(:context) { LaunchDarkly::LDContext.create({ key: 'test-user' }) }
+  let(:key) { 'model-config' }
+  let(:default_config) { LaunchDarkly::AI::AIConfig.default }
 
   describe '#initialize' do
     it 'initializes with a valid LDClient instance' do
@@ -31,23 +111,11 @@ RSpec.describe LaunchDarkly::AI::LDAIClient do
   end
 
   describe '#config' do
-    let(:config_data) do
-      {
-        'enabled' => true,
-        'model' => 'gpt-4',
-        'temperature' => 0.7,
-        'max_tokens' => 100,
-        'messages' => [
-          { 'role' => 'system', 'content' => 'You are a helpful assistant' }
-        ]
-      }
-    end
-
     it 'returns an AIConfig instance with the correct data' do
-      context = LaunchDarkly::LDContext.create('user-key')
+      ai_client = described_class.new(ld_client)
       config = ai_client.config(key, context)
       expect(config).to be_a(LaunchDarkly::AI::AIConfig)
-      expect(config.enabled).to be true
+      expect(config.enabled).to be false
       expect(config.variables['model']).to eq('gpt-4')
       expect(config.variables['temperature']).to eq(0.7)
       expect(config.variables['max_tokens']).to eq(100)
@@ -56,45 +124,33 @@ RSpec.describe LaunchDarkly::AI::LDAIClient do
     end
 
     it 'renders message content with variables' do
-      config_data['messages'] = [
-        { 'role' => 'system', 'content' => 'Hello {{name}}!' }
-      ]
-      config_data['name'] = 'World'
-      context = LaunchDarkly::LDContext.create('user-key')
-
-      config = ai_client.config(key, context)
+      ai_client = described_class.new(ld_client)
+      config = ai_client.config('model-config-message-content', context)
       expect(config.messages[0]['content']).to eq('Hello World!')
     end
 
     it 'preserves messages without content' do
-      config_data['messages'] = [
-        { 'role' => 'system' }
-      ]
-
-      context = LaunchDarkly::LDContext.create('user-key')
-      config = ai_client.config(key, context)
+      ai_client = described_class.new(ld_client)
+      config = ai_client.config('model-config-no-content', context)
       expect(config.messages[0]).to eq({ 'role' => 'system' })
     end
 
     it 'includes context in variables' do
-      context = LaunchDarkly::LDContext.create('user-key')
-
+      ai_client = described_class.new(ld_client)
       config = ai_client.config(key, context)
       expect(config.variables['ldctx']).to eq({ key: 'test-user' })
     end
 
     it 'handles custom variables' do
       custom_vars = { 'custom' => 'value' }
-      context = LaunchDarkly::LDContext.create('user-key')
-
+      ai_client = described_class.new(ld_client)
       config = ai_client.config(key, context, default_config, variables: custom_vars)
       expect(config.variables['custom']).to eq('value')
     end
 
-    it 'returns default config when variation returns nil' do
-      context = LaunchDarkly::LDContext.create('user-key')
-
-      config = ai_client.config(key, context)
+    it 'returns default config when flag is off' do
+      ai_client = described_class.new(ld_client)
+      config = ai_client.config('model-config-default', context)
       expect(config).to be_a(LaunchDarkly::AI::AIConfig)
       expect(config.enabled).to be false
       expect(config.messages).to be_nil
@@ -102,8 +158,7 @@ RSpec.describe LaunchDarkly::AI::LDAIClient do
     end
 
     it 'creates a tracker with the correct configuration' do
-      context = LaunchDarkly::LDContext.create('user-key')
-
+      ai_client = described_class.new(ld_client)
       config = ai_client.config(key, context)
       expect(config.tracker).to be_a(LaunchDarkly::AI::LDAIConfigTracker)
       expect(config.tracker.ld_client).to eq(ld_client)
@@ -111,6 +166,20 @@ RSpec.describe LaunchDarkly::AI::LDAIClient do
       expect(config.tracker.context).to eq(context)
       expect(config.tracker.variation_key).to eq(key)
       expect(config.tracker.version).to eq(1)
+    end
+
+    it 'handles fallthrough variation' do
+      ai_client = described_class.new(ld_client)
+      config = ai_client.config('model-config-fallthrough', context)
+      expect(config.enabled).to be false
+      expect(config.variables['model']).to eq('gpt-3.5-turbo')
+    end
+
+    it 'handles multiple variations' do
+      ai_client = described_class.new(ld_client)
+      config = ai_client.config('model-config-multiple', context)
+      expect(config.enabled).to be true
+      expect(config.variables['model']).to eq('claude-2')
     end
   end
 end
