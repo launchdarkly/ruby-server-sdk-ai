@@ -8,12 +8,12 @@ module LaunchDarkly
     class LDAIConfigTracker
       attr_reader :ld_client, :config_key, :context, :variation_key, :version
 
-      def initialize(ld_client:, config_key:, context:, variation_key:, version:)
+      def initialize(ld_client:, variation_key:, config_key:, version:, context:)
         @ld_client = ld_client
-        @config_key = config_key
-        @context = context
         @variation_key = variation_key
+        @config_key = config_key
         @version = version
+        @context = context
         @duration = nil
         @feedback = nil
         @tokens = nil
@@ -113,14 +113,14 @@ module LaunchDarkly
             input
           )
         end
-        if output
-          @ld_client.track(
-            '$ld:ai:tokens:output',
-            @context,
-            { variationKey: @variation_key, configKey: @config_key },
-            output
-          )
-        end
+        return unless output
+
+        @ld_client.track(
+          '$ld:ai:tokens:output',
+          @context,
+          { variationKey: @variation_key, configKey: @config_key },
+          output
+        )
       end
 
       # Track OpenAI metrics
@@ -188,4 +188,4 @@ module LaunchDarkly
       end
     end
   end
-end 
+end

@@ -2,55 +2,110 @@
 
 require 'ldclient-rb'
 require 'mustache'
+require_relative 'ld_ai_config_tracker'
 
 module LaunchDarkly
   #
   # Namespace for the LaunchDarkly AI SDK.
   #
   module AI
-    # The AIConfig class represents an AI configuration.
-    class AIConfig
-      attr_reader :enabled, :messages, :variables, :tracker
+    # Holds AI role and content.
+    class LDMessage
+      attr_reader :role, :content
 
-      def initialize(enabled: false, messages: nil, variables: nil, tracker: nil)
-        @enabled = enabled
-        @messages = messages
-        @variables = variables
-        @tracker = tracker
-      end
-
-      def self.default
-        AIConfig.new(enabled: false)
+      # TODO: Do we need to validate the role to only be 'system', 'user', or 'assistant'?
+      def initialize(role, content)
+        @role = role
+        @content = content
       end
 
       def to_h
         {
-          enabled: @enabled || false,
-          messages: @messages,
-          variables: @variables,
-          tracker: @tracker
+          role: @role,
+          content: @content
         }
       end
     end
 
-    # The LDAIConfigTracker class is used to track AI configuration.
-    class LDAIConfigTracker
-      attr_reader :ld_client, :config_key, :context, :variation_key, :version
+    # The ModelConfig class represents an AI model configuration.
+    class ModelConfig
+      attr_reader :name, :parameters, :custom
 
-      def initialize(ld_client:, config_key:, context:, variation_key:, version:)
-        @ld_client = ld_client
-        @config_key = config_key
-        @context = context
-        @variation_key = variation_key
-        @version = version
+      def initialize(name:, parameters: {}, custom: {})
+        @name = name
+        @parameters = parameters
+        @custom = custom
       end
 
-      def track
-        @ld_client.track('ai_config_used', @context, nil, {
-                           configKey: @config_key,
-                           variationKey: @variation_key,
-                           version: @version
-                         })
+      # Retrieve model-specific parameters.
+      #
+      # Accessing a named, typed attribute (e.g. name) will result in the call
+      # being delegated to the appropriate property.
+      #
+      # @param key [String] The parameter key to retrieve
+      # @return [Object] The parameter value or nil if not found
+      def get_parameter(key)
+        return @name if key == 'name'
+        return nil if @parameters.nil?
+
+        @parameters[key]
+      end
+
+      # Retrieve customer provided data.
+      #
+      # @param key [String] The custom key to retrieve
+      # @return [Object] The custom value or nil if not found
+      def get_custom(key)
+        return nil if @custom.nil?
+
+        @custom[key]
+      end
+
+      def to_h
+        {
+          name: @name,
+          parameters: @parameters,
+          custom: @custom
+        }
+      end
+    end
+
+    # Configuration related to the provider.
+    class ProviderConfig
+      attr_reader :name
+
+      def initialize(name)
+        @name = name
+      end
+
+      def to_h
+        {
+          name: @name
+        }
+      end
+    end
+
+    # The AIConfig class represents an AI configuration.
+    class AIConfig
+      attr_reader :enabled, :messages, :variables, :tracker, :model, :provider
+
+      def initialize(enabled: nil, model: nil, messages: nil, tracker: nil, provider: nil)
+        @enabled = enabled
+        @messages = messages
+        @tracker = tracker
+        @model = model
+        @provider = provider
+      end
+
+      def to_h
+        {
+          _ldMeta: {
+            enabled: @enabled || false
+          },
+          messages: @messages.is_a?(Array) ? @messages.map { |msg| msg&.to_h } : nil,
+          model: @model&.to_h,
+          provider: @provider&.to_h
+        }
       end
     end
 
@@ -66,46 +121,58 @@ module LaunchDarkly
       end
 
       # Retrieves the AIConfig
-      # @param key [String] The key of the configuration flag
+      # @param config_key [String] The key of the configuration flag
       # @param context [LDContext] The context used when evaluating the flag
       # @param default_value [AIConfig] The default value to use if the flag is not found
       # @param variables [Hash] Optional variables for rendering messages
       # @return [AIConfig] An AIConfig instance containing the configuration data
-      def config(key, context, default_value = AIConfig.default, variables: nil)
-        variation = @ld_client.variation(key, context, default_value.to_h)
+      def config(config_key, context, default_value = nil, variables = nil)
+        variation = @ld_client.variation(
+          config_key,
+          context,
+          default_value.respond_to?(:to_h) ? default_value.to_h : nil
+        )
+        puts("Config variation: #{variation.inspect}")
 
-        # Build variables dictionary for rendering messages
-        all_variables = {}
+        variables ||= {}
+        variables[:ldctx] = context.to_h
 
-        unless variables.nil?
-          variables.each do |k, v|
-            all_variables[k] = v
-          end
-        end
-        all_variables['ldctx'] = context.keys
-
-        # Render messages if they exist
-        messages = nil
-        if variation.key?('messages')
-          messages = variation['messages'].map do |message|
-            message['content'] = Mustache.render(message['content'], all_variables) if message.key?('content')
+        messages = variation.fetch(:messages, nil)
+        if messages.is_a?(Array) && messages.all? { |msg| msg.is_a?(Hash) }
+          messages = messages.map do |message|
+            message[:content] = Mustache.render(message[:content], variables) if message[:content].is_a?(String)
             message
           end
         end
 
-        tracker = LDAIConfigTracker.new(
+        if (provider_config = variation.fetch(:provider, nil)) && provider_config.is_a?(Hash)
+          provider_config = ProviderConfig.new(provider_config.fetch(:name, ''))
+        end
+
+        if (model = variation.fetch(:model, nil)) && model.is_a?(Hash)
+          parameters = variation[:model][:parameters]
+          custom = variation[:model][:custom]
+          model = ModelConfig.new(
+            name: variation[:model][:name],
+            parameters: parameters,
+            custom: custom
+          )
+        end
+
+        tracker = LaunchDarkly::AI::LDAIConfigTracker.new(
           ld_client: @ld_client,
-          config_key: key,
-          context: context,
-          variation_key: key,
-          version: 1
+          variation_key: variation.dig(:_ldMeta, :variationKey) || '',
+          config_key: config_key,
+          version: variation.dig(:_ldMeta, :version) || 1,
+          context: context
         )
 
         AIConfig.new(
-          enabled: variation['enabled'] || false,
+          enabled: variation.dig(:_ldMeta, :enabled) || false,
           messages: messages,
-          variables: all_variables,
-          tracker: tracker
+          tracker: tracker,
+          model: model,
+          provider: provider_config
         )
       end
     end
