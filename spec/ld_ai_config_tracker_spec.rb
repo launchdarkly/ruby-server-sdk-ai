@@ -42,7 +42,7 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:duration:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         100
       )
       tracker.track_duration(100)
@@ -54,7 +54,7 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:duration:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         kind_of(Integer)
       )
       result = tracker.track_duration_of { 'test result' }
@@ -67,7 +67,7 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:feedback:user:positive',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       tracker.track_feedback(kind: :positive)
@@ -77,7 +77,7 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:feedback:user:negative',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       tracker.track_feedback(kind: :negative)
@@ -89,13 +89,13 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:success',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       tracker.track_success
@@ -107,13 +107,13 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:error',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       tracker.track_error
@@ -125,49 +125,43 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
-        100
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
+        300
       )
-      tracker.track_tokens(total: 100)
-    end
-
-    it 'tracks input tokens' do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:input',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
-        50
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
+        200
       )
-      tracker.track_tokens(input: 50)
-    end
-
-    it 'tracks output tokens' do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:output',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
-        50
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
+        100
       )
-      tracker.track_tokens(output: 50)
+      tokens = LaunchDarkly::AI::TokenUsage.new(total: 300, input: 200, output: 100)
+      tracker.track_tokens(tokens)
+      expect(tracker.summary.usage).to eq(tokens)
     end
 
     it 'tracks all token types' do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         100
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:input',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         50
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:output',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         50
       )
       tracker.track_tokens(total: 100, input: 50, output: 50)
@@ -187,37 +181,37 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:duration:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         kind_of(Integer)
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         100
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:input',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         50
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:output',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         50
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:success',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
 
@@ -229,19 +223,19 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:duration:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         kind_of(Integer)
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:error',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         1
       )
 
@@ -262,25 +256,25 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:duration:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         kind_of(Integer)
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:total',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         100
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:input',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         50
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:output',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         50
       )
 
@@ -294,14 +288,14 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:tokens:ttf',
         context,
-        { variationKey: 'test-variation', configKey: 'test-config' },
+        { variationKey: 'test-variation', configKey: 'test-config', version: 1 },
         100
       )
       tracker.track_time_to_first_token(100)
     end
   end
 
-  describe '#get_summary' do
+  describe '#summary' do
     it 'returns a summary of tracked metrics' do
       tracker.track_duration(100)
       tracker.track_feedback(kind: :positive)
@@ -309,23 +303,23 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
       tracker.track_success
       tracker.track_time_to_first_token(50)
 
-      expect(tracker.get_summary).to eq({
-                                          duration: 100,
-                                          feedback: :positive,
-                                          tokens: { total: 100, input: 50, output: 50 },
-                                          success: true,
-                                          time_to_first_token: 50
-                                        })
+      expect(tracker.summary).to eq({
+                                      duration: 100,
+                                      feedback: :positive,
+                                      tokens: { total: 100, input: 50, output: 50 },
+                                      success: true,
+                                      time_to_first_token: 50
+                                    })
     end
 
     it 'returns nil for untracked metrics' do
-      expect(tracker.get_summary).to eq({
-                                          duration: nil,
-                                          feedback: nil,
-                                          tokens: nil,
-                                          success: nil,
-                                          time_to_first_token: nil
-                                        })
+      expect(tracker.summary).to eq({
+                                      duration: nil,
+                                      feedback: nil,
+                                      tokens: nil,
+                                      success: nil,
+                                      time_to_first_token: nil
+                                    })
     end
   end
 end

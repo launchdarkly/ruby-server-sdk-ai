@@ -20,7 +20,7 @@ module LaunchDarkly
 
     # Summary of metrics which have been tracked.
     class LDAIMetricSummary
-      attr_reader :duration, :success, :feedback, :usage, :time_to_first_token
+      attr_accessor :duration, :success, :feedback, :usage, :time_to_first_token
 
       def initialize
         @duration = nil
@@ -33,7 +33,7 @@ module LaunchDarkly
 
     # The LDAIConfigTracker class is used to track AI configuration usage.
     class LDAIConfigTracker
-      attr_reader :ld_client, :config_key, :context, :variation_key, :version
+      attr_reader :ld_client, :config_key, :context, :variation_key, :version, :summary
 
       def initialize(ld_client:, variation_key:, config_key:, version:, context:)
         @ld_client = ld_client
@@ -47,11 +47,11 @@ module LaunchDarkly
       # Track the duration of an AI operation
       # @param duration [Integer] The duration in milliseconds
       def track_duration(duration)
-        @duration = duration
+        @summary.duration = duration
         @ld_client.track(
           '$ld:ai:duration:total',
           @context,
-          { variationKey: @variation_key, configKey: @config_key },
+          flag_data,
           duration
         )
       end
@@ -61,106 +61,113 @@ module LaunchDarkly
       # @return The result of the block
       def track_duration_of
         start_time = Time.now
-        result = yield
+        yield
+      ensure
         duration = ((Time.now - start_time) * 1000).to_i
         track_duration(duration)
-        result
+      end
+
+      # Track time to first token
+      # @param duration [Integer] The duration in milliseconds
+      def track_time_to_first_token(time_to_first_token)
+        @summary.time_to_first_token = time_to_first_token
+        @ld_client.track(
+          '$ld:ai:tokens:ttf',
+          @context,
+          flag_data,
+          time_to_first_token
+        )
       end
 
       # Track user feedback
       # @param kind [Symbol] The kind of feedback (:positive or :negative)
       def track_feedback(kind:)
-        @feedback = kind
+        @summary.feedback = kind
         event_name = kind == :positive ? '$ld:ai:feedback:user:positive' : '$ld:ai:feedback:user:negative'
         @ld_client.track(
           event_name,
           @context,
-          { variationKey: @variation_key, configKey: @config_key },
+          flag_data,
           1
         )
       end
 
       # Track a successful AI generation
       def track_success
-        @success = true
+        @summary.success = true
         @ld_client.track(
           '$ld:ai:generation',
           @context,
-          { variationKey: @variation_key, configKey: @config_key },
+          flag_data,
           1
         )
         @ld_client.track(
           '$ld:ai:generation:success',
           @context,
-          { variationKey: @variation_key, configKey: @config_key },
+          flag_data,
           1
         )
       end
 
       # Track an error in AI generation
       def track_error
-        @success = false
+        @summary.success = false
         @ld_client.track(
           '$ld:ai:generation',
           @context,
-          { variationKey: @variation_key, configKey: @config_key },
+          flag_data,
           1
         )
         @ld_client.track(
           '$ld:ai:generation:error',
           @context,
-          { variationKey: @variation_key, configKey: @config_key },
+          flag_data,
           1
         )
       end
 
       # Track token usage
-      # @param total [Integer] Total number of tokens
-      # @param input [Integer] Number of input tokens
-      # @param output [Integer] Number of output tokens
-      def track_tokens(total: nil, input: nil, output: nil)
-        @tokens = { total: total, input: input, output: output }
-        if total
+      # @param token_usage [TokenUsage] An object containing token usage details
+      def track_tokens(token_usage)
+        @summary.usage = token_usage
+        if token_usage.total.positive?
           @ld_client.track(
             '$ld:ai:tokens:total',
             @context,
-            { variationKey: @variation_key, configKey: @config_key },
-            total
+            flag_data,
+            token_usage.total
           )
         end
-        if input
+        if token_usage.input.positive?
           @ld_client.track(
             '$ld:ai:tokens:input',
             @context,
-            { variationKey: @variation_key, configKey: @config_key },
-            input
+            flag_data,
+            token_usage.input
           )
         end
-        return unless output
+        return unless token_usage.output.positive?
 
         @ld_client.track(
           '$ld:ai:tokens:output',
           @context,
-          { variationKey: @variation_key, configKey: @config_key },
-          output
+          flag_data,
+          token_usage.output
         )
       end
 
-      # Track OpenAI metrics
-      # @yield The block to measure
-      # @return The result of the block
-      def track_openai_metrics
-        start_time = Time.now
-        result = yield
-        duration = ((Time.now - start_time) * 1000).to_i
-        track_duration(duration)
+      # Track OpenAI-specific operations.
+      # This method tracks the duration, token usage, and success/error status.
+      # If the provided block raises, this method will also raise.
+      # A failed operation will not have any token usage data.
+      #
+      # @yield The block to track.
+      # @return The result of the tracked block.
+      def track_openai_metrics(&block)
+        result = track_duration_of(&block)
         track_success
-        if result.usage
-          track_tokens(
-            total: result.usage.total_tokens,
-            input: result.usage.prompt_tokens,
-            output: result.usage.completion_tokens
-          )
+        if result.respond_to?(:usage) && result.usage.respond_to?(:to_h)
+          track_tokens(openai_to_token_usage(result.usage.to_h))
         end
         result
       rescue StandardError => e
@@ -168,46 +175,44 @@ module LaunchDarkly
         raise e
       end
 
-      # Track Bedrock metrics
-      # @yield The block to measure
-      # @return The result of the block
-      def track_bedrock_metrics
-        start_time = Time.now
-        result = yield
-        duration = ((Time.now - start_time) * 1000).to_i
-        track_duration(duration)
-        if result.usage
-          track_tokens(
-            total: result.usage.total_tokens,
-            input: result.usage.input_tokens,
-            output: result.usage.output_tokens
-          )
+      # Track AWS Bedrock conversation operations.
+      # This method tracks the duration, token usage, and success/error status.
+      # @param res [Hash] Response hash from Bedrock.
+      # @return [Hash] The original response hash.
+      def track_bedrock_converse_metrics(res)
+        status_code = res.dig('$metadata', 'httpStatusCode') || 0
+        if status_code == 200
+          track_success
+        elsif status_code >= 400
+          track_error
         end
-        result
+
+        track_duration(res['metrics']['latencyMs']) if res.dig('metrics', 'latencyMs')
+        track_tokens(bedrock_to_token_usage(res['usage'])) if res['usage']
+
+        res
       end
 
-      # Track time to first token
-      # @param duration [Integer] The duration in milliseconds
-      def track_time_to_first_token(duration)
-        @time_to_first_token = duration
-        @ld_client.track(
-          '$ld:ai:tokens:ttf',
-          @context,
-          { variationKey: @variation_key, configKey: @config_key },
-          duration
+      private
+
+      def flag_data
+        { variationKey: @variation_key, configKey: @config_key, version: @version }
+      end
+
+      def openai_to_token_usage(usage)
+        TokenUsage.new(
+          total: usage[:total_tokens] || usage['total_tokens'],
+          input: usage[:prompt_tokens] || usage['prompt_tokens'],
+          output: usage[:completion_tokens] || usage['completion_tokens']
         )
       end
 
-      # Get a summary of all tracked metrics
-      # @return [Hash] A hash containing all tracked metrics
-      def get_summary
-        {
-          duration: @duration,
-          feedback: @feedback,
-          tokens: @tokens,
-          success: @success,
-          time_to_first_token: @time_to_first_token
-        }
+      def bedrock_to_token_usage(usage)
+        TokenUsage.new(
+          total: usage[:total_tokens] || usage['total_tokens'],
+          input: usage[:input_tokens] || usage['input_tokens'],
+          output: usage[:output_tokens] || usage['output_tokens']
+        )
       end
     end
   end
