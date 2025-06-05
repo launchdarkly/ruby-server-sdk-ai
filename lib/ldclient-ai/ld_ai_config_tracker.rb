@@ -4,6 +4,33 @@ require 'ldclient-rb'
 
 module LaunchDarkly
   module AI
+    # Tracks token usage for AI operations.
+    class TokenUsage
+      attr_reader :total, :input, :output
+
+      # @param total [Integer] Total number of tokens used.
+      # @param input [Integer] Number of tokens in the prompt.
+      # @param output [Integer] Number of tokens in the completion.
+      def initialize(total: nil, input: nil, output: nil)
+        @total = total
+        @input = input
+        @output = output
+      end
+    end
+
+    # Summary of metrics which have been tracked.
+    class LDAIMetricSummary
+      attr_reader :duration, :success, :feedback, :usage, :time_to_first_token
+
+      def initialize
+        @duration = nil
+        @success = nil
+        @feedback = nil
+        @usage = nil
+        @time_to_first_token = nil
+      end
+    end
+
     # The LDAIConfigTracker class is used to track AI configuration usage.
     class LDAIConfigTracker
       attr_reader :ld_client, :config_key, :context, :variation_key, :version
@@ -14,11 +41,7 @@ module LaunchDarkly
         @config_key = config_key
         @version = version
         @context = context
-        @duration = nil
-        @feedback = nil
-        @tokens = nil
-        @success = nil
-        @time_to_first_token = nil
+        @summary = LDAIMetricSummary.new
       end
 
       # Track the duration of an AI operation
