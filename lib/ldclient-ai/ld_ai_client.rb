@@ -132,7 +132,6 @@ module LaunchDarkly
           context,
           default_value.respond_to?(:to_h) ? default_value.to_h : nil
         )
-        puts("Config variation: #{variation.inspect}")
 
         variables ||= {}
         variables[:ldctx] = context.to_h
