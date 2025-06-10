@@ -129,8 +129,10 @@ module LaunchDarkly
       # Track token usage
       # @param token_usage [TokenUsage] An object containing token usage details
       def track_tokens(token_usage)
+        return unless token_usage.is_a?(TokenUsage)
+
         @summary.usage = token_usage
-        if token_usage.total.positive?
+        if token_usage.total&.positive?
           @ld_client.track(
             '$ld:ai:tokens:total',
             @context,
@@ -138,7 +140,7 @@ module LaunchDarkly
             token_usage.total
           )
         end
-        if token_usage.input.positive?
+        if token_usage.input&.positive?
           @ld_client.track(
             '$ld:ai:tokens:input',
             @context,
@@ -146,7 +148,7 @@ module LaunchDarkly
             token_usage.input
           )
         end
-        return unless token_usage.output.positive?
+        return unless token_usage.output&.positive?
 
         @ld_client.track(
           '$ld:ai:tokens:output',

@@ -13,8 +13,11 @@ module LaunchDarkly
     class LDMessage
       attr_reader :role, :content
 
-      # TODO: Do we need to validate the role to only be 'system', 'user', or 'assistant'?
+      VALID_ROLES = %w[system user assistant].freeze
+
       def initialize(role, content)
+        raise ArgumentError, "Invalid role: #{role}. Must be one of: #{VALID_ROLES.join(', ')}" unless VALID_ROLES.include?(role.to_s)
+        
         @role = role
         @content = content
       end
