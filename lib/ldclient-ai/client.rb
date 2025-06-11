@@ -149,17 +149,21 @@ module LaunchDarkly
           default_value.respond_to?(:to_h) ? default_value.to_h : nil
         )
 
-        variables ||= {}
-        variables[:ldctx] = context.to_h
+        all_variables = variables ? variables.dup : {}
+        all_variables[:ldctx] = context.to_h
 
         #
         # Process messages and provider configuration
         #
-        messages = variation[:messages]
-        if messages.is_a?(Array) && messages.all? { |msg| msg.is_a?(Hash) }
-          messages = messages.map do |message|
-            message[:content] = Mustache.render(message[:content], variables) if message[:content].is_a?(String)
-            message
+        messages = nil
+        if variation[:messages].is_a?(Array) && variation[:messages].all? { |msg| msg.is_a?(Hash) }
+          messages = variation[:messages].map do |message|
+            next unless message[:content].is_a?(String)
+
+            LDMessage.new(
+              message[:role],
+              Mustache.render(message[:content], variables)
+            )
           end
         end
 
