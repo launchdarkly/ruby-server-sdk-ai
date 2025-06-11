@@ -101,17 +101,17 @@ RSpec.describe LaunchDarkly::AI do
     it 'delegates to properties' do
       model = LaunchDarkly::AI::ModelConfig.new(name: 'fakeModel', parameters: { 'extra-attribute': 'value' })
       expect(model.name).to eq('fakeModel')
-      expect(model.get_parameter(:'extra-attribute')).to eq('value')
-      expect(model.get_parameter('non-existent')).to be_nil
-      expect(model.get_parameter('name')).to eq('fakeModel')
+      expect(model.parameter(:'extra-attribute')).to eq('value')
+      expect(model.parameter('non-existent')).to be_nil
+      expect(model.parameter('name')).to eq('fakeModel')
     end
 
     it 'handles custom attributes' do
       model = LaunchDarkly::AI::ModelConfig.new(name: 'fakeModel', custom: { 'extra-attribute': 'value' })
       expect(model.name).to eq('fakeModel')
-      expect(model.get_custom(:'extra-attribute')).to eq('value')
-      expect(model.get_custom('non-existent')).to be_nil
-      expect(model.get_custom('name')).to be_nil
+      expect(model.custom(:'extra-attribute')).to eq('value')
+      expect(model.custom('non-existent')).to be_nil
+      expect(model.custom('name')).to be_nil
     end
   end
 
@@ -154,8 +154,8 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.model).not_to be_nil
         expect(config.model.name).to eq('fakeModel')
-        expect(config.model.get_parameter(:temperature)).to eq(0.5)
-        expect(config.model.get_parameter(:maxTokens)).to eq(4096)
+        expect(config.model.parameter(:temperature)).to eq(0.5)
+        expect(config.model.parameter(:maxTokens)).to eq(4096)
       end
 
       it 'interpolates variables in model config messages' do
@@ -175,8 +175,8 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.model).not_to be_nil
         expect(config.model.name).to eq('fakeModel')
-        expect(config.model.get_parameter(:temperature)).to eq(0.5)
-        expect(config.model.get_parameter(:maxTokens)).to eq(4096)
+        expect(config.model.parameter(:temperature)).to eq(0.5)
+        expect(config.model.parameter(:maxTokens)).to eq(4096)
       end
 
       it 'returns config with messages interpolated as empty when no variables are provided' do
@@ -196,8 +196,8 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.model).not_to be_nil
         expect(config.model.name).to eq('fakeModel')
-        expect(config.model.get_parameter(:temperature)).to eq(0.5)
-        expect(config.model.get_parameter(:maxTokens)).to eq(4096)
+        expect(config.model.parameter(:temperature)).to eq(0.5)
+        expect(config.model.parameter(:maxTokens)).to eq(4096)
       end
 
       it 'handles provider config correctly' do
@@ -233,9 +233,9 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.model).not_to be_nil
         expect(config.model.name).to eq('fakeModel')
-        expect(config.model.get_parameter(:temperature)).to be_nil
-        expect(config.model.get_parameter(:maxTokens)).to be_nil
-        expect(config.model.get_parameter(:'extra-attribute')).to eq('I can be anything I set my mind/type to')
+        expect(config.model.parameter(:temperature)).to be_nil
+        expect(config.model.parameter(:maxTokens)).to be_nil
+        expect(config.model.parameter(:'extra-attribute')).to eq('I can be anything I set my mind/type to')
       end
 
       it 'interpolates variables from multiple contexts in messages using ldctx' do
@@ -259,9 +259,9 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.model).not_to be_nil
         expect(config.model.name).to eq('fakeModel')
-        expect(config.model.get_parameter(:temperature)).to be_nil
-        expect(config.model.get_parameter(:maxTokens)).to be_nil
-        expect(config.model.get_parameter(:'extra-attribute')).to eq('I can be anything I set my mind/type to')
+        expect(config.model.parameter(:temperature)).to be_nil
+        expect(config.model.parameter(:maxTokens)).to be_nil
+        expect(config.model.parameter(:'extra-attribute')).to eq('I can be anything I set my mind/type to')
       end
 
       it 'handles multiple messages and variable interpolation' do
@@ -283,8 +283,8 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.model).not_to be_nil
         expect(config.model.name).to eq('fakeModel')
-        expect(config.model.get_parameter(:temperature)).to eq(0.7)
-        expect(config.model.get_parameter(:maxTokens)).to eq(8192)
+        expect(config.model.parameter(:temperature)).to eq(0.7)
+        expect(config.model.parameter(:maxTokens)).to eq(8192)
       end
 
       it 'returns disabled config when flag is off' do
@@ -300,8 +300,8 @@ RSpec.describe LaunchDarkly::AI do
         expect(config.model).not_to be_nil
         expect(config.enabled).to be false
         expect(config.model.name).to eq('fakeModel')
-        expect(config.model.get_parameter(:temperature)).to eq(0.1)
-        expect(config.model.get_parameter(:maxTokens)).to be_nil
+        expect(config.model.parameter(:temperature)).to eq(0.1)
+        expect(config.model.parameter(:maxTokens)).to be_nil
       end
 
       it 'returns disabled config with nil model/messages/provider when initial config is disabled' do

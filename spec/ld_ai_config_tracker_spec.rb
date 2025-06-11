@@ -123,7 +123,7 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
 
   describe '#track_bedrock_metrics' do
     it 'tracks duration and tokens' do
-      # Verify the $metadata field in bedrock result. I don't see anything like this in the docs.
+      # TODO: Verify the $metadata field in bedrock result. I don't see anything like this in the docs.
       bedrock_result = {
         '$metadata': { httpStatusCode: 200 },
         usage: {

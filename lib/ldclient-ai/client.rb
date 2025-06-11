@@ -2,22 +2,20 @@
 
 require 'ldclient-rb'
 require 'mustache'
-require_relative 'ld_ai_config_tracker'
+require_relative 'config_tracker'
 
 module LaunchDarkly
   #
   # Namespace for the LaunchDarkly AI SDK.
   #
   module AI
+    #
     # Holds AI role and content.
+    #
     class LDMessage
       attr_reader :role, :content
 
-      VALID_ROLES = %w[system user assistant].freeze
-
       def initialize(role, content)
-        raise ArgumentError, "Invalid role: #{role}. Must be one of: #{VALID_ROLES.join(', ')}" unless VALID_ROLES.include?(role.to_s)
-        
         @role = role
         @content = content
       end
@@ -30,9 +28,11 @@ module LaunchDarkly
       end
     end
 
+    #
     # The ModelConfig class represents an AI model configuration.
+    #
     class ModelConfig
-      attr_reader :name, :parameters, :custom
+      attr_reader :name
 
       def initialize(name:, parameters: {}, custom: {})
         @name = name
@@ -40,6 +40,7 @@ module LaunchDarkly
         @custom = custom
       end
 
+      #
       # Retrieve model-specific parameters.
       #
       # Accessing a named, typed attribute (e.g. name) will result in the call
@@ -47,19 +48,22 @@ module LaunchDarkly
       #
       # @param key [String] The parameter key to retrieve
       # @return [Object] The parameter value or nil if not found
-      def get_parameter(key)
+      #
+      def parameter(key)
         return @name if key == 'name'
-        return nil if @parameters.nil?
+        return nil unless @parameters.is_a?(Hash)
 
         @parameters[key]
       end
 
+      #
       # Retrieve customer provided data.
       #
       # @param key [String] The custom key to retrieve
       # @return [Object] The custom value or nil if not found
-      def get_custom(key)
-        return nil if @custom.nil?
+      #
+      def custom(key)
+        return nil unless @custom.is_a?(Hash)
 
         @custom[key]
       end
@@ -73,7 +77,9 @@ module LaunchDarkly
       end
     end
 
+    #
     # Configuration related to the provider.
+    #
     class ProviderConfig
       attr_reader :name
 
@@ -88,7 +94,9 @@ module LaunchDarkly
       end
     end
 
+    #
     # The AIConfig class represents an AI configuration.
+    #
     class AIConfig
       attr_reader :enabled, :messages, :variables, :tracker, :model, :provider
 
@@ -112,7 +120,9 @@ module LaunchDarkly
       end
     end
 
+    #
     # The LDAIClient class is the main entry point for the LaunchDarkly AI SDK.
+    #
     class LDAIClient
       attr_reader :logger, :ld_client
 
@@ -123,12 +133,15 @@ module LaunchDarkly
         @logger = LaunchDarkly::AI.default_logger
       end
 
+      #
       # Retrieves the AIConfig
+      #
       # @param config_key [String] The key of the configuration flag
       # @param context [LDContext] The context used when evaluating the flag
       # @param default_value [AIConfig] The default value to use if the flag is not found
       # @param variables [Hash] Optional variables for rendering messages
       # @return [AIConfig] An AIConfig instance containing the configuration data
+      #
       def config(config_key, context, default_value = nil, variables = nil)
         variation = @ld_client.variation(
           config_key,
@@ -139,7 +152,10 @@ module LaunchDarkly
         variables ||= {}
         variables[:ldctx] = context.to_h
 
-        messages = variation.fetch(:messages, nil)
+        #
+        # Process messages and provider configuration
+        #
+        messages = variation[:messages]
         if messages.is_a?(Array) && messages.all? { |msg| msg.is_a?(Hash) }
           messages = messages.map do |message|
             message[:content] = Mustache.render(message[:content], variables) if message[:content].is_a?(String)
@@ -147,11 +163,11 @@ module LaunchDarkly
           end
         end
 
-        if (provider_config = variation.fetch(:provider, nil)) && provider_config.is_a?(Hash)
+        if (provider_config = variation[:provider]) && provider_config.is_a?(Hash)
           provider_config = ProviderConfig.new(provider_config.fetch(:name, ''))
         end
 
-        if (model = variation.fetch(:model, nil)) && model.is_a?(Hash)
+        if (model = variation[:model]) && model.is_a?(Hash)
           parameters = variation[:model][:parameters]
           custom = variation[:model][:custom]
           model = ModelConfig.new(

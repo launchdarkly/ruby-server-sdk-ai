@@ -4,8 +4,8 @@ require 'logger'
 require 'mustache'
 
 require 'ldclient-ai/version'
-require 'ldclient-ai/ld_ai_client'
-require 'ldclient-ai/ld_ai_config_tracker'
+require 'ldclient-ai/client'
+require 'ldclient-ai/config_tracker'
 
 module LaunchDarkly
   #
