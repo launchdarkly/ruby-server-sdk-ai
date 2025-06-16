@@ -122,19 +122,17 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   end
 
   describe '#track_bedrock_metrics' do
-    it 'tracks duration and tokens' do
-      # TODO: Verify the $metadata field in bedrock result. I don't see anything like this in the docs.
-      bedrock_result = {
-        '$metadata': { httpStatusCode: 200 },
+    let(:bedrock_result) do
+      {
         usage: {
           total_tokens: 300,
           input_tokens: 200,
           output_tokens: 100,
         },
-        metrics: {
-          latency_ms: 50,
-        },
       }
+    end
+
+    it 'tracks duration and tokens' do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
         context,
@@ -172,30 +170,19 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         100
       )
 
-      result = tracker.track_bedrock_converse_metrics(bedrock_result)
+      result = tracker.track_bedrock_converse_metrics { bedrock_result }
       expect(result).to eq(bedrock_result)
       expect(tracker.summary).to be_a(LaunchDarkly::Server::AI::MetricSummary)
       expect(tracker.summary.usage).to be_a(LaunchDarkly::Server::AI::TokenUsage)
       expect(tracker.summary.usage.total).to eq(300)
       expect(tracker.summary.usage.input).to eq(200)
       expect(tracker.summary.usage.output).to eq(100)
-      expect(tracker.summary.duration).to eq(50)
+      expect(tracker.summary.duration).to be_a(Integer)
+      expect(tracker.summary.duration).to be >= 0
       expect(tracker.summary.success).to be true
     end
 
-    it 'tracks duration and tokens with error' do
-      # Verify the $metadata field in bedrock result. I don't see anything like this in the docs.
-      bedrock_result = {
-        '$metadata': { httpStatusCode: 400 },
-        usage: {
-          total_tokens: 300,
-          input_tokens: 200,
-          output_tokens: 100,
-        },
-        metrics: {
-          latency_ms: 50,
-        },
-      }
+    it 'tracks error for failed operation' do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
         context,
@@ -214,33 +201,11 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         tracker_flag_data,
         kind_of(Integer)
       )
-      expect(ld_client).to receive(:track).with(
-        '$ld:ai:tokens:total',
-        context,
-        tracker_flag_data,
-        300
-      )
-      expect(ld_client).to receive(:track).with(
-        '$ld:ai:tokens:input',
-        context,
-        tracker_flag_data,
-        200
-      )
-      expect(ld_client).to receive(:track).with(
-        '$ld:ai:tokens:output',
-        context,
-        tracker_flag_data,
-        100
-      )
 
-      result = tracker.track_bedrock_converse_metrics(bedrock_result)
-      expect(result).to eq(bedrock_result)
-      expect(tracker.summary).to be_a(LaunchDarkly::Server::AI::MetricSummary)
-      expect(tracker.summary.usage).to be_a(LaunchDarkly::Server::AI::TokenUsage)
-      expect(tracker.summary.usage.total).to eq(300)
-      expect(tracker.summary.usage.input).to eq(200)
-      expect(tracker.summary.usage.output).to eq(100)
-      expect(tracker.summary.duration).to eq(50)
+      expect { tracker.track_bedrock_converse_metrics { raise 'test error' } }.to raise_error('test error')
+      expect(tracker.summary.usage).to be_nil
+      expect(tracker.summary.duration).to be_a(Integer)
+      expect(tracker.summary.duration).to be >= 0
       expect(tracker.summary.success).to be false
     end
   end
@@ -299,6 +264,8 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       expect(tracker.summary.usage.total).to eq(300)
       expect(tracker.summary.usage.input).to eq(200)
       expect(tracker.summary.usage.output).to eq(100)
+      expect(tracker.summary.duration).to be_a(Integer)
+      expect(tracker.summary.duration).to be >= 0
       expect(tracker.summary.success).to be true
     end
 
@@ -324,6 +291,9 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
 
       expect { tracker.track_openai_metrics { raise 'test error' } }.to raise_error('test error')
       expect(tracker.summary.usage).to be_nil
+      expect(tracker.summary.duration).to be_a(Integer)
+      expect(tracker.summary.duration).to be >= 0
+      expect(tracker.summary.success).to be false
     end
   end
 

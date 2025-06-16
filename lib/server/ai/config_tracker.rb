@@ -74,7 +74,7 @@ module LaunchDarkly
         # @yield The block to measure
         # @return The result of the block
         #
-        def track_duration_of
+        def track_duration_of(&block)
           start_time = Time.now
           yield
         ensure
@@ -207,21 +207,17 @@ module LaunchDarkly
         # Track AWS Bedrock conversation operations.
         # This method tracks the duration, token usage, and success/error status.
         #
-        # @param res [Hash] Response hash from Bedrock.
+        # @yield The block to track.
         # @return [Hash] The original response hash.
         #
-        def track_bedrock_converse_metrics(res)
-          status_code = res.dig(:'$metadata', :httpStatusCode) || 0
-          if status_code == 200
-            track_success
-          elsif status_code >= 400
-            track_error
-          end
-
-          track_duration(res[:metrics][:latency_ms]) if res.dig(:metrics, :latency_ms)
-          track_tokens(bedrock_to_token_usage(res[:usage])) if res[:usage]
-
-          res
+        def track_bedrock_converse_metrics(&block)
+          result = track_duration_of(&block)
+          track_success
+          track_tokens(bedrock_to_token_usage(result[:usage])) if result[:usage]
+          result
+        rescue StandardError
+          track_error
+          raise
         end
 
         private def flag_data
