@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require 'ldclient-rb'
-require 'ldclient-ai'
+require 'launchdarkly-server-sdk'
+require 'launchdarkly-server-sdk-ai'
 
-RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
+RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   let(:td) do
     LaunchDarkly::Integrations::TestData.data_source.update(
       LaunchDarkly::Integrations::TestData.data_source.flag('model_config')
@@ -115,7 +115,7 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
         tracker_flag_data,
         100
       )
-      tokens = LaunchDarkly::AI::TokenUsage.new(total: 300, input: 200, output: 100)
+      tokens = LaunchDarkly::Server::AI::TokenUsage.new(total: 300, input: 200, output: 100)
       tracker.track_tokens(tokens)
       expect(tracker.summary.usage).to eq(tokens)
     end
@@ -174,8 +174,8 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
 
       result = tracker.track_bedrock_converse_metrics(bedrock_result)
       expect(result).to eq(bedrock_result)
-      expect(tracker.summary).to be_a(LaunchDarkly::AI::LDAIMetricSummary)
-      expect(tracker.summary.usage).to be_a(LaunchDarkly::AI::TokenUsage)
+      expect(tracker.summary).to be_a(LaunchDarkly::Server::AI::MetricSummary)
+      expect(tracker.summary.usage).to be_a(LaunchDarkly::Server::AI::TokenUsage)
       expect(tracker.summary.usage.total).to eq(300)
       expect(tracker.summary.usage.input).to eq(200)
       expect(tracker.summary.usage.output).to eq(100)
@@ -235,8 +235,8 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
 
       result = tracker.track_bedrock_converse_metrics(bedrock_result)
       expect(result).to eq(bedrock_result)
-      expect(tracker.summary).to be_a(LaunchDarkly::AI::LDAIMetricSummary)
-      expect(tracker.summary.usage).to be_a(LaunchDarkly::AI::TokenUsage)
+      expect(tracker.summary).to be_a(LaunchDarkly::Server::AI::MetricSummary)
+      expect(tracker.summary.usage).to be_a(LaunchDarkly::Server::AI::TokenUsage)
       expect(tracker.summary.usage.total).to eq(300)
       expect(tracker.summary.usage.input).to eq(200)
       expect(tracker.summary.usage.output).to eq(100)
@@ -417,7 +417,7 @@ RSpec.describe LaunchDarkly::AI::LDAIConfigTracker do
     it 'returns a summary of tracked metrics' do
       tracker.track_duration(100)
       tracker.track_feedback(kind: :positive)
-      tracker.track_tokens(LaunchDarkly::AI::TokenUsage.new(total: 100, input: 50, output: 50))
+      tracker.track_tokens(LaunchDarkly::Server::AI::TokenUsage.new(total: 100, input: 50, output: 50))
       tracker.track_success
       tracker.track_time_to_first_token(50)
 

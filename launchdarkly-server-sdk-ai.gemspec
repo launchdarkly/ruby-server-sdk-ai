@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative 'lib/ldclient-ai/version'
+require_relative 'lib/server/ai/version'
 
 Gem::Specification.new do |spec|
   spec.name = 'launchdarkly-server-sdk-ai'
-  spec.version = LaunchDarkly::AI::VERSION
+  spec.version = LaunchDarkly::Server::AI::VERSION
   spec.authors = ['LaunchDarkly']
   spec.email = ['team@launchdarkly.com']
   spec.summary = 'LaunchDarkly AI SDK for Ruby'
