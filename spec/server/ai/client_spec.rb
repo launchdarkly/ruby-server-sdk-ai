@@ -13,7 +13,7 @@ RSpec.describe LaunchDarkly::Server::AI do
                    custom: { 'extra-attribute': 'value' } },
           provider: { name: 'fakeProvider' },
           messages: [{ role: 'system', content: 'Hello, {{name}}!' }],
-          _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 }
+          _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 },
         },
         :green
       )
@@ -25,9 +25,9 @@ RSpec.describe LaunchDarkly::Server::AI do
           model: { name: 'fakeModel', parameters: { temperature: 0.7, maxTokens: 8192 } },
           messages: [
             { role: 'system', content: 'Hello, {{name}}!' },
-            { role: 'user', content: 'The day is, {{day}}!' }
+            { role: 'user', content: 'The day is, {{day}}!' },
           ],
-          _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 }
+          _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 },
         },
         :green
       )
@@ -39,7 +39,7 @@ RSpec.describe LaunchDarkly::Server::AI do
           model: { name: 'fakeModel',
                    parameters: { 'extra-attribute': 'I can be anything I set my mind/type to' } },
           messages: [{ role: 'system', content: 'Hello, {{ldctx.name}}! Is your last name {{ldctx.last}}?' }],
-          _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 }
+          _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 },
         }
       )
         .variation_for_all(0))
@@ -51,7 +51,7 @@ RSpec.describe LaunchDarkly::Server::AI do
                      parameters: { 'extra-attribute': 'I can be anything I set my mind/type to' } },
             messages: [{ role: 'system',
                          content: 'Hello, {{ldctx.user.name}}! Do you work for {{ldctx.org.shortname}}?' }],
-            _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 }
+            _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 },
           }
         )
         .variation_for_all(0))
@@ -61,7 +61,7 @@ RSpec.describe LaunchDarkly::Server::AI do
           {
             model: { name: 'fakeModel', parameters: { temperature: 0.1 } },
             messages: [{ role: 'system', content: 'Hello, {{name}}!' }],
-            _ldMeta: { enabled: false, variationKey: 'abcd', version: 1 }
+            _ldMeta: { enabled: false, variationKey: 'abcd', version: 1 },
           }
         )
         .variation_for_all(0))
@@ -69,10 +69,10 @@ RSpec.describe LaunchDarkly::Server::AI do
     data_source.update(data_source.flag('initial-config-disabled')
         .variations(
           {
-            _ldMeta: { enabled: false }
+            _ldMeta: { enabled: false },
           },
           {
-            _ldMeta: { enabled: true }
+            _ldMeta: { enabled: true },
           }
         )
         .variation_for_all(0))
@@ -80,10 +80,10 @@ RSpec.describe LaunchDarkly::Server::AI do
     data_source.update(data_source.flag('initial-config-enabled')
         .variations(
           {
-            _ldMeta: { enabled: false }
+            _ldMeta: { enabled: false },
           },
           {
-            _ldMeta: { enabled: true }
+            _ldMeta: { enabled: true },
           }
         )
         .variation_for_all(1))
@@ -99,7 +99,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
   describe LaunchDarkly::Server::AI::ModelConfig do
     it 'delegates to properties' do
-      model = LaunchDarkly::Server::AI::ModelConfig.new(name: 'fakeModel', parameters: { 'extra-attribute': 'value' })
+      model = described_class.new(name: 'fakeModel', parameters: { 'extra-attribute': 'value' })
       expect(model.name).to eq('fakeModel')
       expect(model.parameter(:'extra-attribute')).to eq('value')
       expect(model.parameter('non-existent')).to be_nil
@@ -107,7 +107,7 @@ RSpec.describe LaunchDarkly::Server::AI do
     end
 
     it 'handles custom attributes' do
-      model = LaunchDarkly::Server::AI::ModelConfig.new(name: 'fakeModel', custom: { 'extra-attribute': 'value' })
+      model = described_class.new(name: 'fakeModel', custom: { 'extra-attribute': 'value' })
       expect(model.name).to eq('fakeModel')
       expect(model.custom(:'extra-attribute')).to eq('value')
       expect(model.custom('non-existent')).to be_nil
@@ -118,7 +118,7 @@ RSpec.describe LaunchDarkly::Server::AI do
   describe LaunchDarkly::Server::AI::Client do
     describe '#initialize' do
       it 'initializes with a valid LDClient instance' do
-        expect(ai_client).to be_a(LaunchDarkly::Server::AI::Client)
+        expect(ai_client).to be_a(described_class)
         expect(ai_client.ld_client).to eq(ld_client)
       end
 

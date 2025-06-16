@@ -13,7 +13,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
                      custom: { 'extra-attribute': 'value' } },
             provider: { name: 'fakeProvider' },
             messages: [{ role: 'system', content: 'Hello, {{name}}!' }],
-            _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 }
+            _ldMeta: { enabled: true, variationKey: 'abcd', version: 1 },
           },
           'green'
         )
@@ -129,11 +129,11 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         usage: {
           total_tokens: 300,
           input_tokens: 200,
-          output_tokens: 100
+          output_tokens: 100,
         },
         metrics: {
-          latency_ms: 50
-        }
+          latency_ms: 50,
+        },
       }
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
@@ -190,11 +190,11 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         usage: {
           total_tokens: 300,
           input_tokens: 200,
-          output_tokens: 100
+          output_tokens: 100,
         },
         metrics: {
-          latency_ms: 50
-        }
+          latency_ms: 50,
+        },
       }
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation',
@@ -251,8 +251,8 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         usage: {
           total_tokens: 300,
           prompt_tokens: 200,
-          completion_tokens: 100
-        }
+          completion_tokens: 100,
+        },
       }
     end
 
@@ -323,7 +323,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       )
 
       expect { tracker.track_openai_metrics { raise 'test error' } }.to raise_error('test error')
-      expect(tracker.summary.usage).to eq(nil)
+      expect(tracker.summary.usage).to be_nil
     end
   end
 

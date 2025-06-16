@@ -7,7 +7,7 @@ require_relative 'config_tracker'
 module LaunchDarkly
   #
   # Namespace for the LaunchDarkly Server SDK
-  # 
+  #
   module Server
     #
     # Namespace for the LaunchDarkly Server AI SDK.
@@ -27,7 +27,7 @@ module LaunchDarkly
         def to_h
           {
             role: @role,
-            content: @content
+            content: @content,
           }
         end
       end
@@ -76,7 +76,7 @@ module LaunchDarkly
           {
             name: @name,
             parameters: @parameters,
-            custom: @custom
+            custom: @custom,
           }
         end
       end
@@ -93,7 +93,7 @@ module LaunchDarkly
 
         def to_h
           {
-            name: @name
+            name: @name,
           }
         end
       end
@@ -115,11 +115,11 @@ module LaunchDarkly
         def to_h
           {
             _ldMeta: {
-              enabled: @enabled || false
+              enabled: @enabled || false,
             },
             messages: @messages.is_a?(Array) ? @messages.map { |msg| msg&.to_h } : nil,
             model: @model&.to_h,
-            provider: @provider&.to_h
+            provider: @provider&.to_h,
           }
         end
       end
