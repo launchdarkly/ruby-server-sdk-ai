@@ -149,7 +149,7 @@ RSpec.describe LaunchDarkly::AI do
         config = ai_client.config('missing-flag', context, default_config, variables)
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
-        expect(config.messages[0][:content]).to eq('Hello, World!')
+        expect(config.messages[0].content).to eq('Hello, World!')
         expect(config.enabled).to be true
 
         expect(config.model).not_to be_nil
@@ -170,7 +170,7 @@ RSpec.describe LaunchDarkly::AI do
         config = ai_client.config('model-config', context, default_value, variables)
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
-        expect(config.messages[0][:content]).to eq('Hello, World!')
+        expect(config.messages[0].content).to eq('Hello, World!')
         expect(config.enabled).to be true
 
         expect(config.model).not_to be_nil
@@ -191,7 +191,7 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
-        expect(config.messages[0][:content]).to eq('Hello, !')
+        expect(config.messages[0].content).to eq('Hello, !')
         expect(config.enabled).to be true
 
         expect(config.model).not_to be_nil
@@ -228,7 +228,7 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
-        expect(config.messages[0][:content]).to eq('Hello, Sandy! Is your last name Beaches?')
+        expect(config.messages[0].content).to eq('Hello, Sandy! Is your last name Beaches?')
         expect(config.enabled).to be true
 
         expect(config.model).not_to be_nil
@@ -254,7 +254,7 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
-        expect(config.messages[0][:content]).to eq('Hello, Sandy! Do you work for LD?')
+        expect(config.messages[0].content).to eq('Hello, Sandy! Do you work for LD?')
         expect(config.enabled).to be true
 
         expect(config.model).not_to be_nil
@@ -277,8 +277,8 @@ RSpec.describe LaunchDarkly::AI do
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
-        expect(config.messages[0][:content]).to eq('Hello, World!')
-        expect(config.messages[1][:content]).to eq('The day is, Monday!')
+        expect(config.messages[0].content).to eq('Hello, World!')
+        expect(config.messages[1].content).to eq('The day is, Monday!')
         expect(config.enabled).to be true
 
         expect(config.model).not_to be_nil

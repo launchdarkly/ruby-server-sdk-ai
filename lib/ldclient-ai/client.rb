@@ -162,7 +162,7 @@ module LaunchDarkly
 
             LDMessage.new(
               message[:role],
-              Mustache.render(message[:content], variables)
+              Mustache.render(message[:content], all_variables)
             )
           end
         end
