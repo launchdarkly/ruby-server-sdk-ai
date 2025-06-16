@@ -47,7 +47,7 @@ module LaunchDarkly
       # being delegated to the appropriate property.
       #
       # @param key [String] The parameter key to retrieve
-      # @return [Object] The parameter value or nil if not found
+      # @return [Object, nil] The parameter value or nil if not found
       #
       def parameter(key)
         return @name if key == 'name'
@@ -60,7 +60,7 @@ module LaunchDarkly
       # Retrieve customer provided data.
       #
       # @param key [String] The custom key to retrieve
-      # @return [Object] The custom value or nil if not found
+      # @return [Object, nil] The custom value or nil if not found
       #
       def custom(key)
         return nil unless @custom.is_a?(Hash)
