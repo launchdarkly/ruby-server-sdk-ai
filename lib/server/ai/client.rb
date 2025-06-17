@@ -156,9 +156,7 @@ module LaunchDarkly
           all_variables = variables ? variables.dup : {}
           all_variables[:ldctx] = context.to_h
 
-          #
           # Process messages and provider configuration
-          #
           messages = nil
           if variation[:messages].is_a?(Array) && variation[:messages].all? { |msg| msg.is_a?(Hash) }
             messages = variation[:messages].map do |message|
