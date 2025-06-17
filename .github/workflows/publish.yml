@@ -68,4 +68,3 @@ jobs:
       base64-subjects: "${{ needs.build-publish.outputs.gem-hash }}"
       upload-assets: ${{ !inputs.dry_run }}
       upload-tag-name: ${{ needs.release-package.outputs.upload-tag-name }}
-      provenance-name: ${{ format('{0}_provenance.intoto.jsonl', inputs.tag_name) }}
