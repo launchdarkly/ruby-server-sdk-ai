@@ -2,7 +2,7 @@
 
 require 'ldclient-rb'
 require 'mustache'
-require_relative 'config_tracker'
+require_relative 'ai_config_tracker'
 
 module LaunchDarkly
   #

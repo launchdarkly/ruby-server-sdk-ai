@@ -5,7 +5,7 @@ require 'mustache'
 
 require 'server/ai/version'
 require 'server/ai/client'
-require 'server/ai/config_tracker'
+require 'server/ai/ai_config_tracker'
 
 module LaunchDarkly
   module Server
