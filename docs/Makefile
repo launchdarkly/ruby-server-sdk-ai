@@ -1,7 +1,7 @@
 ifeq ($(LD_RELEASE_VERSION),)
-TITLE=LaunchDarkly Ruby AI Library
+TITLE=LaunchDarkly Ruby Server SDK AI Library
 else
-TITLE=LaunchDarkly Ruby AI Library ($(LD_RELEASE_VERSION))
+TITLE=LaunchDarkly Ruby Server SDK AI Library ($(LD_RELEASE_VERSION))
 endif
 
 .PHONY: dependencies html

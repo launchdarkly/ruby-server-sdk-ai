@@ -18,7 +18,7 @@ runs:
 
     - name: Run tests
       shell: bash
-      run: bundle exec rspec spec $SPEC_TAGS
+      run: bundle exec rspec spec
 
     - name: Run RuboCop
       shell: bash

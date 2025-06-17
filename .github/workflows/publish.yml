@@ -1,5 +1,16 @@
 name: Publish Package
 on:
+  workflow_call:
+    inputs:
+      dry_run:
+        description: 'Is this a dry run. If so no package will be published.'
+        type: boolean
+        required: true
+      tag_name:
+        description: 'The tag name to use for the provenance file'
+        type: string
+        required: true
+
   workflow_dispatch:
     inputs:
       dry_run:
@@ -31,11 +42,20 @@ jobs:
         with:
           ruby-version: 3.0
 
+      - id: build-docs
+        name: Build docs
+        uses: ./.github/actions/build-docs
+
       - id: publish
         name: Publish Package
         uses: ./.github/actions/publish
         with:
           dry_run: ${{ inputs.dry_run }}
+
+      - uses: ./.github/actions/publish-docs
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
 
   release-provenance:
     needs: [ 'build-publish' ]
@@ -47,3 +67,5 @@ jobs:
     with:
       base64-subjects: "${{ needs.build-publish.outputs.gem-hash }}"
       upload-assets: ${{ !inputs.dry_run }}
+      upload-tag-name: ${{ needs.release-package.outputs.upload-tag-name }}
+      provenance-name: ${{ format('{0}_provenance.intoto.jsonl', inputs.tag_name) }}
