@@ -2,5 +2,7 @@
 
 source 'https://rubygems.org'
 
-gem 'aws-sdk-bedrockruntime'
+ruby '>= 3.0.0'
+
 gem 'launchdarkly-server-sdk-ai', path: '../../..'
+gem 'openai', '~> 0.7.0'

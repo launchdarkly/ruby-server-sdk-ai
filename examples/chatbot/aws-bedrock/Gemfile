@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+ruby '>= 3.0.0'
+
+gem 'aws-sdk-bedrockruntime', '~> 1.0'
+gem 'launchdarkly-server-sdk-ai', path: '../../..'
