@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # Contents and pull-requests are for release-please to make releases.
+      issues: write # Needed to create labels
       pull-requests: write
     outputs:
       release-created: ${{ steps.release.outputs.release_created }}
