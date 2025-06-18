@@ -6,5 +6,3 @@
 ### Features
 
 * Implement the AIClient and AITracker classes ([#1](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/1)) ([7511fe9](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/7511fe96e7eb9cec2140d0292fe251c2fb161840))
-
-## Changelog
