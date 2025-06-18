@@ -1,5 +1,44 @@
-LaunchDarkly Server-side AI library for Ruby
+LaunchDarkly Server SDK AI library for Ruby
 ==============================================
+
+[![Gem Version](https://badge.fury.io/rb/launchdarkly-server-sdk-ai.svg)](http://badge.fury.io/rb/launchdarkly-server-sdk-ai)
+
+[![Quality Control](https://github.com/launchdarkly/ruby-server-sdk-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/launchdarkly/ruby-server-sdk-ai/actions/workflows/ci.yml)
+[![RubyDoc](https://img.shields.io/static/v1?label=docs+-+all+versions&message=reference&color=00add8)](https://www.rubydoc.info/gems/launchdarkly-server-sdk-ai)
+[![GitHub Pages](https://img.shields.io/static/v1?label=docs+-+latest&message=reference&color=00add8)](https://launchdarkly.github.io/ruby-server-sdk-ai)
+
+LaunchDarkly overview
+-------------------------
+[LaunchDarkly](https://www.launchdarkly.com) is a feature management platform that serves trillions of feature flags daily to help teams build better software, faster. [Get started](https://docs.launchdarkly.com/home/getting-started) using LaunchDarkly today!
+
+[![Twitter Follow](https://img.shields.io/twitter/follow/launchdarkly.svg?style=social&label=Follow&maxAge=2592000)](https://twitter.com/intent/follow?screen_name=launchdarkly)
+
+Supported Ruby versions
+-----------------------
+
+This version of the library has a minimum Ruby version of 3.0.0, or 9.4.0 for JRuby.
+
+Getting started
+-----------
+
+Install the gem and add to the application's Gemfile by executing:
+
+    $ bundle add launchdarkly-server-sdk-ai
+
+If bundler is not being used to manage dependencies, install the gem by executing:
+
+    $ gem install launchdarkly-server-sdk-ai
+
+The provided AI `Client` can be setup as shown below:
+
+```ruby
+require 'launchdarkly-server-sdk'
+require 'launchdarkly-server-sdk-ai'
+
+sdk_key = ENV['LAUNCHDARKLY_SDK_KEY']
+ld_client = LaunchDarkly::LDClient.new(sdk_key)
+ai_client = LaunchDarkly::Server::AI::Client.new(ld_client)
+```
 
 Learn more
 -----------
