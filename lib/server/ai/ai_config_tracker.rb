@@ -119,12 +119,6 @@ module LaunchDarkly
         def track_success
           @summary.success = true
           @ld_client.track(
-            '$ld:ai:generation',
-            @context,
-            flag_data,
-            1
-          )
-          @ld_client.track(
             '$ld:ai:generation:success',
             @context,
             flag_data,
@@ -137,12 +131,6 @@ module LaunchDarkly
         #
         def track_error
           @summary.success = false
-          @ld_client.track(
-            '$ld:ai:generation',
-            @context,
-            flag_data,
-            1
-          )
           @ld_client.track(
             '$ld:ai:generation:error',
             @context,
