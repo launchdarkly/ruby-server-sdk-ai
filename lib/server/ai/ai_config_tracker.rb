@@ -239,7 +239,7 @@ module LaunchDarkly
             configKey: @config_key,
             version: @version,
             modelName: @model_name,
-            providerName: @provider_name
+            providerName: @provider_name,
           }
         end
 
