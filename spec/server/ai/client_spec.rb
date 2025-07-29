@@ -213,6 +213,11 @@ RSpec.describe LaunchDarkly::Server::AI do
 
         expect(config.provider).not_to be_nil
         expect(config.provider.name).to eq('fakeProvider')
+        expect(config.tracker).not_to be_nil
+        expect(config.tracker.send(:flag_data)).to include(
+          modelName: 'fakeModel',
+          providerName: 'fakeProvider'
+        )
       end
 
       it 'interpolates context variables in messages using ldctx' do
@@ -334,6 +339,11 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(config.model).to be_nil
         expect(config.messages).to be_nil
         expect(config.provider).to be_nil
+        expect(config.tracker).not_to be_nil
+        expect(config.tracker.send(:flag_data)).to include(
+          modelName: '',
+          providerName: ''
+        )
       end
     end
   end
