@@ -134,12 +134,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
 
     it 'tracks duration and tokens' do
       expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation',
-        context,
-        tracker_flag_data,
-        1
-      )
-      expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:success',
         context,
         tracker_flag_data,
@@ -183,12 +177,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
     end
 
     it 'tracks error for failed operation' do
-      expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation',
-        context,
-        tracker_flag_data,
-        1
-      )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:error',
         context,
@@ -247,12 +235,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         100
       )
       expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation',
-        context,
-        tracker_flag_data,
-        1
-      )
-      expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:success',
         context,
         tracker_flag_data,
@@ -275,12 +257,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         context,
         tracker_flag_data,
         kind_of(Integer)
-      )
-      expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation',
-        context,
-        tracker_flag_data,
-        1
       )
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:error',
@@ -322,12 +298,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   describe '#track_success' do
     it 'tracks generation and success events' do
       expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation',
-        context,
-        tracker_flag_data,
-        1
-      )
-      expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:success',
         context,
         tracker_flag_data,
@@ -341,12 +311,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   describe '#track_error' do
     it 'tracks generation and error events' do
       expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation',
-        context,
-        tracker_flag_data,
-        1
-      )
-      expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:error',
         context,
         tracker_flag_data,
@@ -357,12 +321,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
     end
 
     it 'overwrites success with error if both are tracked' do
-      expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation',
-        context,
-        tracker_flag_data,
-        1
-      ).twice
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:success',
         context,
