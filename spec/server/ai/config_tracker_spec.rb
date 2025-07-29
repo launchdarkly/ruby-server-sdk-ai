@@ -27,14 +27,16 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   end
 
   let(:context) { LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' }) }
-  let(:tracker_flag_data) { { variationKey: 'test-variation', configKey: 'test-config', version: 1 } }
+  let(:tracker_flag_data) { { variationKey: 'test-variation', configKey: 'test-config', version: 1, modelName: 'fakeModel', providerName: 'fakeProvider' } }
   let(:tracker) do
     described_class.new(
       ld_client: ld_client,
       config_key: tracker_flag_data[:configKey],
       context: context,
       variation_key: tracker_flag_data[:variationKey],
-      version: tracker_flag_data[:version]
+      version: tracker_flag_data[:version],
+      model_name: 'fakeModel',
+      provider_name: 'fakeProvider'
     )
   end
 
@@ -406,6 +408,15 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       expect(tracker.summary.usage).to be_nil
       expect(tracker.summary.success).to be_nil
       expect(tracker.summary.time_to_first_token).to be_nil
+    end
+  end
+
+  describe '#flag_data' do
+    it 'includes model_name and provider_name in flag data' do
+      expect(tracker.send(:flag_data)).to include(
+        modelName: 'fakeModel',
+        providerName: 'fakeProvider'
+      )
     end
   end
 end

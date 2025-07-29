@@ -42,13 +42,26 @@ module LaunchDarkly
       # The AIConfigTracker class is used to track AI configuration usage.
       #
       class AIConfigTracker
-        attr_reader :ld_client, :config_key, :context, :variation_key, :version, :summary
+        attr_reader :ld_client, :config_key, :context, :variation_key, :version, :summary, :model_name, :provider_name
 
-        def initialize(ld_client:, variation_key:, config_key:, version:, context:)
+        #
+        # Initialize a new AIConfigTracker instance.
+        #
+        # @param ld_client [LDClient] The LaunchDarkly client instance
+        # @param variation_key [String] The variation key from the flag evaluation
+        # @param config_key [String] The configuration key
+        # @param version [Integer] The version number
+        # @param model_name [String] The name of the AI model being used
+        # @param provider_name [String] The name of the AI provider
+        # @param context [LDContext] The context used for the flag evaluation
+        #
+        def initialize(ld_client:, variation_key:, config_key:, version:, model_name:, provider_name:, context:)
           @ld_client = ld_client
           @variation_key = variation_key
           @config_key = config_key
           @version = version
+          @model_name = model_name
+          @provider_name = provider_name
           @context = context
           @summary = MetricSummary.new
         end
@@ -221,7 +234,13 @@ module LaunchDarkly
         end
 
         private def flag_data
-          { variationKey: @variation_key, configKey: @config_key, version: @version }
+          {
+            variationKey: @variation_key,
+            configKey: @config_key,
+            version: @version,
+            modelName: @model_name,
+            providerName: @provider_name
+          }
         end
 
         private def openai_to_token_usage(usage)

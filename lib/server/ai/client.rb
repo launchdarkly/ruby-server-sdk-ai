@@ -188,6 +188,8 @@ module LaunchDarkly
             variation_key: variation.dig(:_ldMeta, :variationKey) || '',
             config_key: config_key,
             version: variation.dig(:_ldMeta, :version) || 1,
+            model_name: model&.name || '',
+            provider_name: provider_config&.name || '',
             context: context
           )
 
