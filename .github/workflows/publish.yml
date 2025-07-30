@@ -24,7 +24,7 @@ jobs:
     # Needed to get tokens during publishing.
     permissions:
       id-token: write
-      contents: read
+      contents: write # Needed in this case to write github pages.
     outputs:
       gem-hash: ${{ steps.publish.outputs.gem-hash}}
     steps:
