@@ -102,7 +102,7 @@ module LaunchDarkly
       # The AIConfig class represents an AI configuration.
       #
       class AIConfig
-        attr_reader :enabled, :messages, :variables, :tracker, :model, :provider
+        attr_reader :enabled, :messages, :tracker, :model, :provider
 
         def initialize(enabled: nil, model: nil, messages: nil, tracker: nil, provider: nil)
           @enabled = enabled
