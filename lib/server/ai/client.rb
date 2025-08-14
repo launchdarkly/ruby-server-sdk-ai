@@ -147,6 +147,8 @@ module LaunchDarkly
         # @return [AIConfig] An AIConfig instance containing the configuration data
         #
         def config(config_key, context, default_value = nil, variables = nil)
+          @ld_client.track('$ld:ai:config:function:single', context, config_key, 1)
+
           variation = @ld_client.variation(
             config_key,
             context,
