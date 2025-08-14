@@ -380,7 +380,12 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
 
   describe 'config method tracking' do
     it 'calls track with correct parameters when config is called' do
-      allow(ld_client).to receive(:track)
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:config:function:single',
+        context,
+        'test-config-key',
+        1
+      )
       allow(ld_client).to receive(:variation).and_return({
         '_ldMeta' => { 'enabled' => true, 'variationKey' => 'test-variation', 'version' => 1 },
         'model' => { 'name' => 'test-model' },
@@ -392,13 +397,6 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       default_value = LaunchDarkly::Server::AI::AIConfig.new(enabled: false)
 
       client.config('test-config-key', context, default_value)
-
-      expect(ld_client).to have_received(:track).with(
-        '$ld:ai:config:function:single',
-        context,
-        'test-config-key',
-        1
-      )
     end
   end
 end
