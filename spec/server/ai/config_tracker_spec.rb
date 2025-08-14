@@ -393,7 +393,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
 
       client.config('test-config-key', context, default_value)
 
-      expect(ld_client).to receive(:track).with(
+      expect(ld_client).to have_received(:track).with(
         '$ld:ai:config:function:single',
         context,
         'test-config-key',
