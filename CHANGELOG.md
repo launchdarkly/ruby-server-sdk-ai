@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.2.0...0.2.1) (2025-08-28)
+
+
+### Bug Fixes
+
+* Add usage tracking to config method ([#15](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/15)) ([53ec5f6](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/53ec5f6ea03a160a95baf368355bc90b7383dd64))
+
 ## [0.2.0](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.1.0...0.2.0) (2025-07-30)
 
 
