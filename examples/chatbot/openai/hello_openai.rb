@@ -59,8 +59,18 @@ class Chatbot
 end
 
 DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
-  enabled: false
+  enabled: true,
+  model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'replace-with-your-model'),
+  messages: [
+    LaunchDarkly::Server::AI::Message.new('system',
+      'You are the backup assistant when something prevents retrieving LaunchDarkly configured assistant. You have the persona of HAL 9000 talking with {{ldctx.name}}'),
+  ]
 )
+
+# You can also default to disabled if you are unable to connect to LaunchDarkly services.
+# DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
+#   enabled: false
+# )
 
 ld_client = LaunchDarkly::LDClient.new(sdk_key)
 ai_client = LaunchDarkly::Server::AI::Client.new(ld_client)

@@ -14,6 +14,7 @@ This repository includes examples for `OpenAI` and `Bedrock`. Depending on your 
 
 1. Install the required dependencies with `bundle install` in the appropriate example directory.
 1. [Create an AI Config](https://launchdarkly.com/docs/home/ai-configs/create) using the key specified in the examples, or copy the key of an existing AI Config in your LaunchDarkly project that you want to use.
+1. Update the default model (`replace-with-your-model`) in the example file.
 1. Set the environment variable `LAUNCHDARKLY_SDK_KEY` to your LaunchDarkly SDK key and `LAUNCHDARKLY_AI_CONFIG_KEY` to the AI Config key; otherwise, an AI Config of `sample-ai-config` will be assumed.
 
    ```bash
