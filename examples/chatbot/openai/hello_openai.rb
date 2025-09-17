@@ -27,51 +27,50 @@ end
 # Chatbot class that interacts with LaunchDarkly AI and OpenAI
 #
 class Chatbot
-  attr_reader :aiclient, :ai_config_key, :openai_client, :context
+  attr_reader :ai_config, :openai_client, :messages
 
-  DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
-    enabled: true,
-    model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'my-default-model'),
-    messages: [
-      LaunchDarkly::Server::AI::Message.new('system',
-                                      'You are a default unhelpful assistant with the persona of HAL 9000 talking with {{ldctx.name}}'),
-      LaunchDarkly::Server::AI::Message.new('user', '{{user_question}}'),
-    ]
-  )
-
-  def initialize(aiclient, ai_config_key, openai_client, context)
-    @aiclient = aiclient
-    @ai_config_key = ai_config_key
+  def initialize(ai_config, openai_client)
+    @ai_config = ai_config
+    @messages = ai_config.messages
     @openai_client = openai_client
-    @context = context
   end
 
   def ask_agent(question)
-    ai_config = aiclient.config(
-      @ai_config_key,
-      @context,
-      DEFAULT_VALUE,
-      { user_question: question }
-    )
-
+    @messages << LaunchDarkly::Server::AI::Message.new('user', question)
     begin
       completion = ai_config.tracker.track_openai_metrics do
         @openai_client.chat.completions.create(
           model: ai_config.model.name,
-          messages: ai_config.messages.map(&:to_h)
+          messages: @messages.map(&:to_h)
         )
       end
-      [completion[:choices][0][:message][:content], ai_config.tracker]
+      response_content = completion[:choices][0][:message][:content]
+      @messages << LaunchDarkly::Server::AI::Message.new('assistant', response_content)
+      response_content
     rescue StandardError => e
-      ["An error occurred: #{e.message}", nil]
+      "An error occurred: #{e.message}"
     end
   end
 
-  def agent_was_helpful(tracker, helpful)
+  def agent_was_helpful(helpful)
     kind = helpful ? :positive : :negative
-    tracker.track_feedback(kind: kind)
+    ai_config.tracker.track_feedback(kind: kind)
   end
 end
+
+DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
+  enabled: true,
+  model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'replace-with-your-model'),
+  messages: [
+    LaunchDarkly::Server::AI::Message.new('system',
+      'You are the backup assistant when something prevents retrieving LaunchDarkly configured assistant. You have the persona of HAL 9000 talking with {{ldctx.name}}'),
+  ]
+)
+
+# You can also default to disabled if you are unable to connect to LaunchDarkly services.
+# DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
+#   enabled: false
+# )
 
 ld_client = LaunchDarkly::LDClient.new(sdk_key)
 ai_client = LaunchDarkly::Server::AI::Client.new(ld_client)
@@ -90,24 +89,31 @@ context = LaunchDarkly::LDContext.create({
                                             name: 'Lucy',
                                           })
 
-chatbot = Chatbot.new(ai_client, ai_config_key, OpenAI::Client.new(api_key: openai_api_key), context)
+ai_config = ai_client.config(
+  ai_config_key,
+  context,
+  DEFAULT_VALUE
+)
+
+unless ai_config.enabled
+  puts '*** AI features are disabled'
+  exit 1
+end
+
+chatbot = Chatbot.new(ai_config, OpenAI::Client.new(api_key: openai_api_key))
 
 loop do
   print "Ask a question (or type 'exit'): "
-  input = gets&.chomp
-  break if input.nil? || input.strip.downcase == 'exit'
+  question = gets&.chomp
+  break if question.nil? || question.strip.downcase == 'exit'
 
-  response, tracker = chatbot.ask_agent(input)
+  response = chatbot.ask_agent(question)
   puts "AI Response: #{response}"
-
-  next if tracker.nil? # If tracker is nil, skip feedback collection
-
-  print "Was the response helpful? [yes/no] (or type 'exit'): "
-  feedback = gets&.chomp
-  break if feedback.nil? || feedback.strip.downcase == 'exit'
-
-  helpful = feedback.strip.downcase == 'yes'
-  chatbot.agent_was_helpful(tracker, helpful)
 end
+
+print "Was the chat helpful? [yes/no]: "
+feedback = gets&.chomp
+
+chatbot.agent_was_helpful(feedback == 'yes') unless feedback.nil?
 
 ld_client.close

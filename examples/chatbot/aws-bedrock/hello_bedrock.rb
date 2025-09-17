@@ -10,9 +10,6 @@ sdk_key = ENV['LAUNCHDARKLY_SDK_KEY']
 # Set config_key to the AI Config key you want to evaluate.
 ai_config_key = ENV['LAUNCHDARKLY_AI_CONFIG_KEY'] || 'sample-ai-config'
 
-# Set aws_access_key_id and aws_secret_access_key for AWS credentials.
-aws_access_key_id = ENV['AWS_ACCESS_KEY_ID']
-aws_secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
 region = ENV['AWS_REGION'] || 'us-east-1'
 
 if sdk_key.nil? || sdk_key.empty?
@@ -20,47 +17,20 @@ if sdk_key.nil? || sdk_key.empty?
   exit 1
 end
 
-if aws_access_key_id.nil? || aws_access_key_id.empty?
-  puts '*** Please set the AWS_ACCESS_KEY_ID env variable first'
-  exit 1
-end
-
-if aws_secret_access_key.nil? || aws_secret_access_key.empty?
-  puts '*** Please set the AWS_SECRET_ACCESS_KEY env variable first'
-  exit 1
-end
-
 #
 # Chatbot class that interacts with LaunchDarkly AI and AWS Bedrock
 #
 class BedrockChatbot
-  attr_reader :aiclient, :ai_config_key, :bedrock_client
+  attr_reader :ai_config, :bedrock_client, :messages
 
-  DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
-    enabled: true,
-    model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'my-default-model'),
-    messages: [
-      LaunchDarkly::Server::AI::Message.new('system',
-                                            'You are a default unhelpful assistant with the persona of HAL 9000 talking with {{ldctx.name}}'),
-      LaunchDarkly::Server::AI::Message.new('user', '{{user_question}}'),
-    ]
-  )
-
-  def initialize(aiclient, ai_config_key, bedrock_client, context)
-    @aiclient = aiclient
-    @ai_config_key = ai_config_key
+  def initialize(ai_config, bedrock_client)
+    @ai_config = ai_config
+    @messages = ai_config.messages
     @bedrock_client = bedrock_client
-    @context = context
   end
 
   def ask_agent(question)
-    ai_config = aiclient.config(
-      @ai_config_key,
-      @context,
-      DEFAULT_VALUE,
-      { user_question: question }
-    )
-
+    @messages << LaunchDarkly::Server::AI::Message.new('user', question)
     begin
       response = ai_config.tracker.track_bedrock_converse_metrics do
         @bedrock_client.converse(
@@ -70,15 +40,16 @@ class BedrockChatbot
           )
         )
       end
-      [response.output.message.content[0].text, ai_config.tracker]
+      @messages << LaunchDarkly::Server::AI::Message.new('assistant', response.output.message.content[0].text)
+      response.output.message.content[0].text
     rescue StandardError => e
-      ["An error occured: #{e.message}", nil]
+      "An error occured: #{e.message}"
     end
   end
 
-  def agent_was_helpful(tracker, helpful)
+  def agent_was_helpful(helpful)
     kind = helpful ? :positive : :negative
-    tracker.track_feedback(kind: kind)
+    ai_config.tracker.track_feedback(kind: kind)
   end
 
   def map_converse_arguments(model_id, messages)
@@ -86,13 +57,8 @@ class BedrockChatbot
       model_id: model_id,
     }
 
-    mapped_messages = []
-    user_messages = messages.select { |msg| msg.role == 'user' }
-    mapped_messages << { role: 'user', content: user_messages.map { |msg| { text: msg.content } } } unless user_messages.empty?
-
-    assistant_messages = messages.select { |msg| msg.role == 'assistant' }
-    mapped_messages << { role: 'assistant', content: assistant_messages.map { |msg| { text: msg.content } } } unless assistant_messages.empty?
-    args[:messages] = mapped_messages unless mapped_messages.empty?
+    chat_messages = messages.select { |msg| msg.role != 'system' }
+    args[:messages] = chat_messages.map { |msg| { role: msg.role, content: [{ text: msg.content }] } }
 
     system_messages = messages.select { |msg| msg.role == 'system' }
     args[:system] = system_messages.map { |msg| { text: msg.content } } unless system_messages.empty?
@@ -118,27 +84,49 @@ context = LaunchDarkly::LDContext.create({
                                          })
 
 bedrock_client = Aws::BedrockRuntime::Client.new(
-  aws_access_key_id: aws_access_key_id,
-  aws_secret_access_key: aws_secret_access_key,
   region: region
 )
-chatbot = BedrockChatbot.new(ai_client, ai_config_key, bedrock_client, context)
+
+
+DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
+  enabled: true,
+  model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'replace-with-your-model'),
+  messages: [
+    LaunchDarkly::Server::AI::Message.new('system',
+      'You are the backup assistant when something prevents retrieving LaunchDarkly configured assistant. You have the persona of HAL 9000 talking with {{ldctx.name}}'),
+  ]
+)
+
+# You can also default to disabled if you are unable to connect to LaunchDarkly services.
+# DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
+#   enabled: false
+# )
+
+ai_config = ai_client.config(
+  ai_config_key,
+  context,
+  DEFAULT_VALUE
+)
+
+unless ai_config.enabled
+  puts '*** AI features are disabled'
+  exit 1
+end
+
+chatbot = BedrockChatbot.new(ai_config, bedrock_client)
 
 loop do
-  print "Ask a question: (or type 'exit'): "
+  print "Ask a question (or type 'exit'): "
   question = gets&.chomp
   break if question.nil? || question.strip.downcase == 'exit'
 
-  response, tracker = chatbot.ask_agent(question)
+  response = chatbot.ask_agent(question)
   puts "AI Response: #{response}"
-
-  next if tracker.nil? # If tracker is nil, skip feedback collection
-
-  print "Was the response helpful? [yes/no] (or type 'exit'): "
-  feedback = gets&.chomp
-  break if feedback.nil? || feedback.strip.downcase == 'exit'
-
-  chatbot.agent_was_helpful(tracker, feedback == 'yes')
 end
+
+print "Was the chat helpful? [yes/no]: "
+feedback = gets&.chomp
+
+chatbot.agent_was_helpful(feedback == 'yes') unless feedback.nil?
 
 ld_client.close
