@@ -3,7 +3,7 @@
 require 'ldclient-rb'
 require 'mustache'
 require_relative 'ai_config_tracker'
-require_relative 'version'
+require_relative 'sdk_info'
 
 module LaunchDarkly
   #
@@ -150,9 +150,9 @@ module LaunchDarkly
             TRACK_SDK_INFO,
             INIT_TRACK_CONTEXT,
             {
-              aiSdkName: 'launchdarkly-server-sdk-ai',
+              aiSdkName: LaunchDarkly::Server::AI::SDK_NAME,
               aiSdkVersion: LaunchDarkly::Server::AI::VERSION,
-              aiSdkLanguage: 'ruby',
+              aiSdkLanguage: LaunchDarkly::Server::AI::SDK_LANGUAGE,
             },
             1
           )
@@ -224,6 +224,7 @@ module LaunchDarkly
             provider: provider_config
           )
         end
+
         # @deprecated Use {#completion_config} instead.
         def config(config_key, context, default_value = nil, variables = nil)
           warn '[DEPRECATION] `config` is deprecated. Use `completion_config` instead.'

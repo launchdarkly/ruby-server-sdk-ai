@@ -135,9 +135,9 @@ RSpec.describe LaunchDarkly::Server::AI do
           '$ld:ai:sdk-info',
           an_object_satisfying { |ctx| ctx.key == 'ld-internal-tracking' && ctx.get_value(:anonymous) == true },
           {
-            aiSdkName: 'launchdarkly-server-sdk-ai',
+            aiSdkName: LaunchDarkly::Server::AI::SDK_NAME,
             aiSdkVersion: LaunchDarkly::Server::AI::VERSION,
-            aiSdkLanguage: 'ruby',
+            aiSdkLanguage: LaunchDarkly::Server::AI::SDK_LANGUAGE,
           },
           1
         )

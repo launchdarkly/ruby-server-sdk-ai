@@ -4,6 +4,7 @@ require 'logger'
 require 'mustache'
 
 require 'server/ai/version'
+require 'server/ai/sdk_info'
 require 'server/ai/client'
 require 'server/ai/ai_config_tracker'
 
