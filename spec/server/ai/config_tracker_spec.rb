@@ -378,10 +378,11 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
     end
   end
 
-  describe 'config method tracking' do
-    it 'calls track with correct parameters when config is called' do
+  describe 'completion_config method tracking' do
+    it 'calls track with correct parameters when completion_config is called' do
+      allow(ld_client).to receive(:track)
       expect(ld_client).to receive(:track).with(
-        '$ld:ai:config:function:single',
+        '$ld:ai:usage:completion-config',
         context,
         'test-config-key',
         1
@@ -396,7 +397,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       client = LaunchDarkly::Server::AI::Client.new(ld_client)
       default_value = LaunchDarkly::Server::AI::AIConfig.new(enabled: false)
 
-      client.config('test-config-key', context, default_value)
+      client.completion_config('test-config-key', context, default_value)
     end
   end
 end

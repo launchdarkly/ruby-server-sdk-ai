@@ -3,6 +3,7 @@
 require 'ldclient-rb'
 require 'mustache'
 require_relative 'ai_config_tracker'
+require_relative 'version'
 
 module LaunchDarkly
   #
@@ -127,6 +128,15 @@ module LaunchDarkly
       #
       # The Client class is the main entry point for the LaunchDarkly AI SDK.
       #
+      TRACK_SDK_INFO = '$ld:ai:sdk-info'
+      TRACK_USAGE_COMPLETION_CONFIG = '$ld:ai:usage:completion-config'
+
+      INIT_TRACK_CONTEXT = LaunchDarkly::LDContext.create({
+        kind: 'user',
+        key: 'ld-internal-tracking',
+        anonymous: true,
+      })
+
       class Client
         attr_reader :logger, :ld_client
 
@@ -135,6 +145,17 @@ module LaunchDarkly
 
           @ld_client = ld_client
           @logger = LaunchDarkly::Server::AI.default_logger
+
+          @ld_client.track(
+            TRACK_SDK_INFO,
+            INIT_TRACK_CONTEXT,
+            {
+              aiSdkName: 'launchdarkly-server-sdk-ai',
+              aiSdkVersion: LaunchDarkly::Server::AI::VERSION,
+              aiSdkLanguage: 'ruby',
+            },
+            1
+          )
         end
 
         #
@@ -146,8 +167,8 @@ module LaunchDarkly
         # @param variables [Hash] Optional variables for rendering messages
         # @return [AIConfig] An AIConfig instance containing the configuration data
         #
-        def config(config_key, context, default_value = nil, variables = nil)
-          @ld_client.track('$ld:ai:config:function:single', context, config_key, 1)
+        def completion_config(config_key, context, default_value = nil, variables = nil)
+          @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, config_key, 1)
 
           variation = @ld_client.variation(
             config_key,
@@ -202,6 +223,11 @@ module LaunchDarkly
             model: model,
             provider: provider_config
           )
+        end
+        # @deprecated Use {#completion_config} instead.
+        def config(config_key, context, default_value = nil, variables = nil)
+          warn '[DEPRECATION] `config` is deprecated. Use `completion_config` instead.'
+          completion_config(config_key, context, default_value, variables)
         end
       end
     end
