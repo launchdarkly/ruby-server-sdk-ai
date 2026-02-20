@@ -7,6 +7,17 @@ LaunchDarkly Server SDK AI library for Ruby
 [![RubyDoc](https://img.shields.io/static/v1?label=docs+-+all+versions&message=reference&color=00add8)](https://www.rubydoc.info/gems/launchdarkly-server-sdk-ai)
 [![GitHub Pages](https://img.shields.io/static/v1?label=docs+-+latest&message=reference&color=00add8)](https://launchdarkly.github.io/ruby-server-sdk-ai)
 
+> [!CAUTION]
+> This AI SDK is in pre-release and not subject to backwards compatibility guarantees. The API may change based on feedback.
+>
+> Pin to a specific minor version and review the [changelog] before upgrading.
+>
+> Active feature development is ongoing in the [Python][python-ai-sdk] and [Node.js][node-ai-sdk] AI SDKs, so this SDK will receive new features at a slower pace. Refer to those for the latest capabilities.
+
+[changelog]: https://github.com/launchdarkly/ruby-server-sdk-ai/blob/main/CHANGELOG.md
+[python-ai-sdk]: https://github.com/launchdarkly/python-server-sdk-ai/tree/main/packages/sdk/server-ai
+[node-ai-sdk]: https://github.com/launchdarkly/js-core/tree/main/packages/sdk/server-ai
+
 LaunchDarkly overview
 -------------------------
 [LaunchDarkly](https://www.launchdarkly.com) is a feature management platform that serves trillions of feature flags daily to help teams build better software, faster. [Get started](https://docs.launchdarkly.com/home/getting-started) using LaunchDarkly today!
