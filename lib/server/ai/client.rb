@@ -132,7 +132,7 @@ module LaunchDarkly
       TRACK_USAGE_COMPLETION_CONFIG = '$ld:ai:usage:completion-config'
 
       INIT_TRACK_CONTEXT = LaunchDarkly::LDContext.create({
-        kind: 'user',
+        kind: 'ld-ai',
         key: 'ld-internal-tracking',
         anonymous: true,
       })
