@@ -128,11 +128,11 @@ module LaunchDarkly
       #
       # The Client class is the main entry point for the LaunchDarkly AI SDK.
       #
-      TRACK_SDK_INFO = '$ld:ai:sdk-info'
+      TRACK_SDK_INFO = '$ld:ai:sdk:info'
       TRACK_USAGE_COMPLETION_CONFIG = '$ld:ai:usage:completion-config'
 
       INIT_TRACK_CONTEXT = LaunchDarkly::LDContext.create({
-        kind: 'ld-ai',
+        kind: 'ld_ai',
         key: 'ld-internal-tracking',
         anonymous: true,
       })

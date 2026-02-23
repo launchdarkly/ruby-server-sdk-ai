@@ -132,8 +132,8 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'tracks sdk-info on construction' do
         expect(ld_client).to receive(:track).with(
-          '$ld:ai:sdk-info',
-          an_object_satisfying { |ctx| ctx.kind == 'ld-ai' && ctx.key == 'ld-internal-tracking' && ctx.get_value(:anonymous) == true },
+          '$ld:ai:sdk:info',
+          an_object_satisfying { |ctx| ctx.kind == 'ld_ai' && ctx.key == 'ld-internal-tracking' && ctx.get_value(:anonymous) == true },
           {
             aiSdkName: LaunchDarkly::Server::AI::SDK_NAME,
             aiSdkVersion: LaunchDarkly::Server::AI::VERSION,
