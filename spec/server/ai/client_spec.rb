@@ -129,9 +129,23 @@ RSpec.describe LaunchDarkly::Server::AI do
       it 'raises an error if LDClient is not an instance of LaunchDarkly::LDClient' do
         expect { described_class.new('not a client') }.to raise_error(ArgumentError, 'LDClient instance is required')
       end
+
+      it 'tracks sdk-info on construction' do
+        expect(ld_client).to receive(:track).with(
+          '$ld:ai:sdk:info',
+          an_object_satisfying { |ctx| ctx.kind == 'ld_ai' && ctx.key == 'ld-internal-tracking' && ctx.get_value(:anonymous) == true },
+          {
+            aiSdkName: LaunchDarkly::Server::AI::SDK_NAME,
+            aiSdkVersion: LaunchDarkly::Server::AI::VERSION,
+            aiSdkLanguage: LaunchDarkly::Server::AI::SDK_LANGUAGE,
+          },
+          1
+        )
+        described_class.new(ld_client)
+      end
     end
 
-    describe '#config' do
+    describe '#completion_config' do
       it 'uses default config on invalid flag' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
         model = LaunchDarkly::Server::AI::ModelConfig.new(name: 'fakeModel',
@@ -146,7 +160,7 @@ RSpec.describe LaunchDarkly::Server::AI do
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.config('missing-flag', context, default_config, variables)
+        config = ai_client.completion_config('missing-flag', context, default_config, variables)
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
         expect(config.messages[0].content).to eq('Hello, World!')
@@ -167,7 +181,7 @@ RSpec.describe LaunchDarkly::Server::AI do
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.config('model-config', context, default_value, variables)
+        config = ai_client.completion_config('model-config', context, default_value, variables)
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
         expect(config.messages[0].content).to eq('Hello, World!')
@@ -187,7 +201,7 @@ RSpec.describe LaunchDarkly::Server::AI do
           messages: []
         )
 
-        config = ai_client.config('model-config', context, default_value, {})
+        config = ai_client.completion_config('model-config', context, default_value, {})
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -209,7 +223,7 @@ RSpec.describe LaunchDarkly::Server::AI do
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.config('model-config', context, default_value, variables)
+        config = ai_client.completion_config('model-config', context, default_value, variables)
 
         expect(config.provider).not_to be_nil
         expect(config.provider.name).to eq('fakeProvider')
@@ -229,7 +243,7 @@ RSpec.describe LaunchDarkly::Server::AI do
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.config('ctx-interpolation', context, default_value, variables)
+        config = ai_client.completion_config('ctx-interpolation', context, default_value, variables)
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -255,7 +269,7 @@ RSpec.describe LaunchDarkly::Server::AI do
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.config('multi-ctx-interpolation', context, default_value, variables)
+        config = ai_client.completion_config('multi-ctx-interpolation', context, default_value, variables)
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -278,7 +292,7 @@ RSpec.describe LaunchDarkly::Server::AI do
         )
         variables = { 'name' => 'World', 'day' => 'Monday' }
 
-        config = ai_client.config('multiple-messages', context, default_value, variables)
+        config = ai_client.completion_config('multiple-messages', context, default_value, variables)
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -300,7 +314,7 @@ RSpec.describe LaunchDarkly::Server::AI do
           messages: []
         )
 
-        config = ai_client.config('off-config', context, default_value, {})
+        config = ai_client.completion_config('off-config', context, default_value, {})
 
         expect(config.model).not_to be_nil
         expect(config.enabled).to be false
@@ -317,7 +331,7 @@ RSpec.describe LaunchDarkly::Server::AI do
           messages: []
         )
 
-        config = ai_client.config('initial-config-disabled', context, default_value, {})
+        config = ai_client.completion_config('initial-config-disabled', context, default_value, {})
 
         expect(config.enabled).to be false
         expect(config.model).to be_nil
@@ -333,7 +347,7 @@ RSpec.describe LaunchDarkly::Server::AI do
           messages: []
         )
 
-        config = ai_client.config('initial-config-enabled', context, default_value, {})
+        config = ai_client.completion_config('initial-config-enabled', context, default_value, {})
 
         expect(config.enabled).to be true
         expect(config.model).to be_nil

@@ -102,7 +102,7 @@ DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
 #   enabled: false
 # )
 
-ai_config = ai_client.config(
+ai_config = ai_client.completion_config(
   ai_config_key,
   context,
   DEFAULT_VALUE
