@@ -170,6 +170,18 @@ module LaunchDarkly
         def completion_config(config_key, context, default_value = nil, variables = nil)
           @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, config_key, 1)
 
+          _completion_config(config_key, context, default_value, variables)
+        end
+
+        # @deprecated Use {#completion_config} instead.
+        def config(config_key, context, default_value = nil, variables = nil)
+          warn '[DEPRECATION] `config` is deprecated. Use `completion_config` instead.'
+          completion_config(config_key, context, default_value, variables)
+        end
+
+        private
+
+        def _completion_config(config_key, context, default_value = nil, variables = nil)
           variation = @ld_client.variation(
             config_key,
             context,
@@ -179,7 +191,6 @@ module LaunchDarkly
           all_variables = variables ? variables.dup : {}
           all_variables[:ldctx] = context.to_h
 
-          # Process messages and provider configuration
           messages = nil
           if variation[:messages].is_a?(Array) && variation[:messages].all? { |msg| msg.is_a?(Hash) }
             messages = variation[:messages].map do |message|
@@ -223,12 +234,6 @@ module LaunchDarkly
             model: model,
             provider: provider_config
           )
-        end
-
-        # @deprecated Use {#completion_config} instead.
-        def config(config_key, context, default_value = nil, variables = nil)
-          warn '[DEPRECATION] `config` is deprecated. Use `completion_config` instead.'
-          completion_config(config_key, context, default_value, variables)
         end
       end
     end
