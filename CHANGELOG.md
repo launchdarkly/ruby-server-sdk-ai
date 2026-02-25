@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.2](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.2.1...0.2.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* Improve usage reporting ([#18](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/18)) ([9f7ec17](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/9f7ec178a87e0f1139c4445d4236cb5db296b0fa))
+* Remove bundler version constraint from gemspec ([#20](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/20)) ([ef18f32](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/ef18f323d604b3b4d3ca8f913b66316def34042b))
+
 ## [0.2.1](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.2.0...0.2.1) (2025-08-28)
 
 
