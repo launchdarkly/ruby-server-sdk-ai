@@ -7,7 +7,7 @@ require 'launchdarkly-server-sdk-ai'
 # Set sdk_key to your LaunchDarkly SDK key.
 sdk_key = ENV['LAUNCHDARKLY_SDK_KEY']
 
-# Set config_key to the AI Config key you want to evaluate.
+# Set key to the AI Config key you want to evaluate.
 ai_config_key = ENV['LAUNCHDARKLY_AI_CONFIG_KEY'] || 'sample-ai-config'
 
 region = ENV['AWS_REGION'] || 'us-east-1'
@@ -87,26 +87,16 @@ bedrock_client = Aws::BedrockRuntime::Client.new(
   region: region
 )
 
-
-DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
-  enabled: true,
-  model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'replace-with-your-model'),
-  messages: [
-    LaunchDarkly::Server::AI::Message.new('system',
-      'You are the backup assistant when something prevents retrieving LaunchDarkly configured assistant. You have the persona of HAL 9000 talking with {{ldctx.name}}'),
-  ]
-)
-
-# You can also default to disabled if you are unable to connect to LaunchDarkly services.
-# DEFAULT_VALUE = LaunchDarkly::Server::AI::AIConfig.new(
-#   enabled: false
-# )
-
-ai_config = ai_client.completion_config(
-  ai_config_key,
-  context,
-  DEFAULT_VALUE
-)
+# Pass a default for improved resiliency when the flag is unavailable or LaunchDarkly is unreachable; omit for a disabled default.
+# Example:
+#   default = LaunchDarkly::Server::AI::AIConfig.new(
+#     enabled: true,
+#     model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'my-model'),
+#     provider: LaunchDarkly::Server::AI::ProviderConfig.new(name: 'my-provider'),
+#     messages: [LaunchDarkly::Server::AI::Message.new('system', 'Fallback system prompt')]
+#   )
+#   ai_config = ai_client.completion_config(key: ai_config_key, context:, default:)
+ai_config = ai_client.completion_config(key: ai_config_key, context:)
 
 unless ai_config.enabled
   puts '*** AI features are disabled'

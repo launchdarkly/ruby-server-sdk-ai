@@ -153,14 +153,14 @@ RSpec.describe LaunchDarkly::Server::AI do
                                                     temperature: 0.5, maxTokens: 4096
                                                   })
         messages = [LaunchDarkly::Server::AI::Message.new('system', 'Hello, {{name}}!')]
-        default_config = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: model,
           messages: messages
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.completion_config('missing-flag', context, default_config, variables)
+        config = ai_client.completion_config(key: 'missing-flag', context:, default:, variables:)
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
         expect(config.messages[0].content).to eq('Hello, World!')
@@ -174,14 +174,14 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'interpolates variables in model config messages' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fakeModel'),
           messages: [LaunchDarkly::Server::AI::Message.new('system', 'Hello, {{name}}!')]
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.completion_config('model-config', context, default_value, variables)
+        config = ai_client.completion_config(key: 'model-config', context:, default:, variables:)
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
         expect(config.messages[0].content).to eq('Hello, World!')
@@ -195,13 +195,13 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns config with messages interpolated as empty when no variables are provided' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fakeModel'),
           messages: []
         )
 
-        config = ai_client.completion_config('model-config', context, default_value, {})
+        config = ai_client.completion_config(key: 'model-config', context:, default:)
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -216,14 +216,14 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'handles provider config correctly' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user', name: 'Sandy' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.completion_config('model-config', context, default_value, variables)
+        config = ai_client.completion_config(key: 'model-config', context:, default:, variables:)
 
         expect(config.provider).not_to be_nil
         expect(config.provider.name).to eq('fakeProvider')
@@ -236,14 +236,14 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'interpolates context variables in messages using ldctx' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user', name: 'Sandy', last: 'Beaches' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.completion_config('ctx-interpolation', context, default_value, variables)
+        config = ai_client.completion_config(key: 'ctx-interpolation', context:, default:, variables:)
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -262,14 +262,14 @@ RSpec.describe LaunchDarkly::Server::AI do
         org_context = LaunchDarkly::LDContext.create({ key: 'org-key', kind: 'org', name: 'LaunchDarkly',
                                                        shortname: 'LD' })
         context = LaunchDarkly::LDContext.create_multi([user_context, org_context])
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
         )
         variables = { 'name' => 'World' }
 
-        config = ai_client.completion_config('multi-ctx-interpolation', context, default_value, variables)
+        config = ai_client.completion_config(key: 'multi-ctx-interpolation', context:, default:, variables:)
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -285,14 +285,14 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'handles multiple messages and variable interpolation' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
         )
         variables = { 'name' => 'World', 'day' => 'Monday' }
 
-        config = ai_client.completion_config('multiple-messages', context, default_value, variables)
+        config = ai_client.completion_config(key: 'multiple-messages', context:, default:, variables:)
 
         expect(config.messages).not_to be_nil
         expect(config.messages.length).to be > 0
@@ -308,13 +308,13 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns disabled config when flag is off' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
         )
 
-        config = ai_client.completion_config('off-config', context, default_value, {})
+        config = ai_client.completion_config(key: 'off-config', context:, default:)
 
         expect(config.model).not_to be_nil
         expect(config.enabled).to be false
@@ -325,13 +325,13 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns disabled config with nil model/messages/provider when initial config is disabled' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
         )
 
-        config = ai_client.completion_config('initial-config-disabled', context, default_value, {})
+        config = ai_client.completion_config(key: 'initial-config-disabled', context:, default:)
 
         expect(config.enabled).to be false
         expect(config.model).to be_nil
@@ -341,13 +341,13 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns enabled config with nil model/messages/provider when initial config is enabled' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default_value = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfig.new(
           enabled: false,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
         )
 
-        config = ai_client.completion_config('initial-config-enabled', context, default_value, {})
+        config = ai_client.completion_config(key: 'initial-config-enabled', context:, default:)
 
         expect(config.enabled).to be true
         expect(config.model).to be_nil
@@ -363,7 +363,15 @@ RSpec.describe LaunchDarkly::Server::AI do
       it 'uses disabled config when no default value is provided and flag is missing' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
 
-        config = ai_client.completion_config('missing-flag', context)
+        config = ai_client.completion_config(key: 'missing-flag', context:)
+
+        expect(config.enabled).to be false
+      end
+
+      it 'uses disabled config when nil is explicitly passed as default value and flag is missing' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+
+        config = ai_client.completion_config(key: 'missing-flag', context:, default: nil)
 
         expect(config.enabled).to be false
       end

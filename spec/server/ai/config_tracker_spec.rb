@@ -395,9 +395,8 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       })
 
       client = LaunchDarkly::Server::AI::Client.new(ld_client)
-      default_value = LaunchDarkly::Server::AI::AIConfig.new(enabled: false)
 
-      client.completion_config('test-config-key', context, default_value)
+      client.completion_config(key: 'test-config-key', context:)
     end
   end
 end
