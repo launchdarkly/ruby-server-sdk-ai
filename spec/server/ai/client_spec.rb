@@ -359,6 +359,30 @@ RSpec.describe LaunchDarkly::Server::AI do
           providerName: ''
         )
       end
+
+      it 'uses disabled config when no default value is provided and flag is missing' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+
+        config = ai_client.completion_config('missing-flag', context)
+
+        expect(config.enabled).to be false
+      end
+    end
+
+    describe LaunchDarkly::Server::AI::AIConfig do
+      it 'disabled class method returns a disabled AIConfig' do
+        config = described_class.disabled
+        expect(config).to be_a(described_class)
+        expect(config.enabled).to be false
+        expect(config.messages).to be_nil
+        expect(config.model).to be_nil
+      end
+
+      it 'disabled class method returns a new instance each call' do
+        first = described_class.disabled
+        second = described_class.disabled
+        expect(first).not_to be(second)
+      end
     end
   end
 end

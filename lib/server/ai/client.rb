@@ -113,6 +113,15 @@ module LaunchDarkly
           @provider = provider
         end
 
+        #
+        # Returns a new disabled AIConfig instance.
+        #
+        # @return [AIConfig] a new disabled config
+        #
+        def self.disabled
+          new(enabled: false)
+        end
+
         def to_h
           {
             _ldMeta: {
@@ -167,14 +176,14 @@ module LaunchDarkly
         # @param variables [Hash] Optional variables for rendering messages
         # @return [AIConfig] An AIConfig instance containing the configuration data
         #
-        def completion_config(config_key, context, default_value = nil, variables = nil)
+        def completion_config(config_key, context, default_value = AIConfig.disabled, variables = nil)
           @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, config_key, 1)
 
           _completion_config(config_key, context, default_value, variables)
         end
 
         # @deprecated Use {#completion_config} instead.
-        def config(config_key, context, default_value = nil, variables = nil)
+        def config(config_key, context, default_value = AIConfig.disabled, variables = nil)
           warn '[DEPRECATION] `config` is deprecated. Use `completion_config` instead.'
           completion_config(config_key, context, default_value, variables)
         end
