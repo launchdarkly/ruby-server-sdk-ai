@@ -40,7 +40,7 @@ jobs:
         name: Build and Test
         uses: ./.github/actions/ci
         with:
-          ruby-version: 3.0
+          ruby-version: 3.1
 
       - id: build-docs
         name: Build docs
