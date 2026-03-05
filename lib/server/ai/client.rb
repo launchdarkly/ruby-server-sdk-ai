@@ -113,6 +113,15 @@ module LaunchDarkly
           @provider = provider
         end
 
+        #
+        # Returns a new disabled AIConfig instance.
+        #
+        # @return [AIConfig] a new disabled config
+        #
+        def self.disabled
+          new(enabled: false)
+        end
+
         def to_h
           {
             _ldMeta: {
@@ -161,31 +170,31 @@ module LaunchDarkly
         #
         # Retrieves the AIConfig
         #
-        # @param config_key [String] The key of the configuration flag
+        # @param key [String] The key of the configuration flag
         # @param context [LDContext] The context used when evaluating the flag
-        # @param default_value [AIConfig] The default value to use if the flag is not found
+        # @param default [AIConfig] The default value to use if the flag is not found
         # @param variables [Hash] Optional variables for rendering messages
         # @return [AIConfig] An AIConfig instance containing the configuration data
         #
-        def completion_config(config_key, context, default_value = nil, variables = nil)
-          @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, config_key, 1)
+        def completion_config(key:, context:, default: nil, variables: nil)
+          @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, key, 1)
 
-          _completion_config(config_key, context, default_value, variables)
+          _completion_config(key:, context:, default: default || AIConfig.disabled, variables:)
         end
 
         # @deprecated Use {#completion_config} instead.
-        def config(config_key, context, default_value = nil, variables = nil)
+        def config(key:, context:, default: nil, variables: nil)
           warn '[DEPRECATION] `config` is deprecated. Use `completion_config` instead.'
-          completion_config(config_key, context, default_value, variables)
+          completion_config(key:, context:, default:, variables:)
         end
 
         private
 
-        def _completion_config(config_key, context, default_value = nil, variables = nil)
+        def _completion_config(key:, context:, default:, variables: nil)
           variation = @ld_client.variation(
-            config_key,
+            key,
             context,
-            default_value.respond_to?(:to_h) ? default_value.to_h : nil
+            default.respond_to?(:to_h) ? default.to_h : nil
           )
 
           all_variables = variables ? variables.dup : {}
@@ -220,18 +229,18 @@ module LaunchDarkly
           tracker = LaunchDarkly::Server::AI::AIConfigTracker.new(
             ld_client: @ld_client,
             variation_key: variation.dig(:_ldMeta, :variationKey) || '',
-            config_key: config_key,
+            config_key: key,
             version: variation.dig(:_ldMeta, :version) || 1,
             model_name: model&.name || '',
             provider_name: provider_config&.name || '',
-            context: context
+            context:
           )
 
           AIConfig.new(
             enabled: variation.dig(:_ldMeta, :enabled) || false,
-            messages: messages,
-            tracker: tracker,
-            model: model,
+            messages:,
+            tracker:,
+            model:,
             provider: provider_config
           )
         end
