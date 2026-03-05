@@ -4,7 +4,7 @@ We've built a simple console application that demonstrates how LaunchDarkly's Ru
 
 Below, you'll find the build procedure. For more comprehensive instructions, you can visit your [Quickstart page](https://docs.launchdarkly.com/home/ai-configs/quickstart) or the [Ruby reference guide](https://docs.launchdarkly.com/sdk/ai/ruby).
 
-This demo requires Ruby 3.0 or higher.
+This demo requires Ruby 3.1 or higher.
 
 ## Build Instructions
 
