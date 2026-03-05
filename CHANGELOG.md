@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.0](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.2.2...0.3.0) (2026-03-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Use kwargs for completion_config and config methods
+* Return disabled config if no defaultValue is provided ([#23](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/23))
+
+### Features
+
+* Drop support for Ruby 3.0 which is EOL. ([fe3fdf8](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/fe3fdf8c022dd4e53e43e9311d76e3b5a098af75))
+* Use kwargs for completion_config and config methods ([fe3fdf8](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/fe3fdf8c022dd4e53e43e9311d76e3b5a098af75))
+
+
+### Bug Fixes
+
+* Return disabled config if no defaultValue is provided ([#23](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/23)) ([fe3fdf8](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/fe3fdf8c022dd4e53e43e9311d76e3b5a098af75))
+
 ## [0.2.2](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.2.1...0.2.2) (2026-02-25)
 
 
