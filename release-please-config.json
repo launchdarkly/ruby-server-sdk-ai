@@ -2,7 +2,6 @@
   "packages": {
     ".": {
       "release-type": "ruby",
-      "draft": true,
       "force-tag-creation": true,
       "bump-minor-pre-major": true,
       "versioning": "default",

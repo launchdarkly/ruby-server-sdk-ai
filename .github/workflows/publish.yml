@@ -10,11 +10,6 @@ on:
         description: 'The tag name to use for the provenance file'
         type: string
         required: true
-      publish_release:
-        description: 'Publish (un-draft) the release after all artifacts are uploaded?'
-        type: boolean
-        required: false
-        default: false
 
   workflow_dispatch:
     inputs:
@@ -22,11 +17,6 @@ on:
         description: 'Is this a dry run. If so no package will be published.'
         type: boolean
         required: true
-      publish_release:
-        description: 'Publish (un-draft) the release after all artifacts are uploaded?'
-        type: boolean
-        required: false
-        default: true
 
 jobs:
   build-publish:
@@ -77,19 +67,3 @@ jobs:
         uses: actions/attest@v4
         with:
           subject-checksums: checksums.txt
-
-  publish-release:
-    needs: ['build-publish']
-    if: ${{ !inputs.dry_run && inputs.publish_release }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ inputs.tag_name }}
-        run: >
-          gh release edit "$TAG_NAME"
-          --repo ${{ github.repository }}
-          --draft=false
