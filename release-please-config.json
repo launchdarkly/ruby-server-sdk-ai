@@ -3,11 +3,15 @@
     ".": {
       "release-type": "ruby",
       "draft": true,
+      "force-tag-creation": true,
       "bump-minor-pre-major": true,
       "versioning": "default",
       "include-component-in-tag": false,
       "include-v-in-tag": false,
-      "extra-files": ["PROVENANCE.md", "lib/server/ai/version.rb"]
+      "extra-files": [
+        "PROVENANCE.md",
+        "lib/server/ai/version.rb"
+      ]
     }
   }
 }
