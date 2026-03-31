@@ -26,8 +26,6 @@ jobs:
       id-token: write
       contents: write # Needed in this case to write github pages.
       attestations: write
-    outputs:
-      gem-hash: ${{ steps.publish.outputs.gem-hash }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,15 +55,8 @@ jobs:
         with:
           token: ${{secrets.GITHUB_TOKEN}}
 
-      - name: Generate checksums file
-        if: ${{ !inputs.dry_run }}
-        env:
-          HASHES: ${{ steps.publish.outputs.gem-hash }}
-        run: |
-          echo "$HASHES" | base64 -d > checksums.txt
-
       - name: Attest build provenance
         if: ${{ !inputs.dry_run }}
         uses: actions/attest@v4
         with:
-          subject-checksums: checksums.txt
+          subject-path: 'launchdarkly-server-sdk-ai-*.gem'
