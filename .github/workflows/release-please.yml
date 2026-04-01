@@ -14,7 +14,6 @@ jobs:
       pull-requests: write
     outputs:
       release-created: ${{ steps.release.outputs.release_created }}
-      tag-name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4
         id: release
@@ -25,4 +24,3 @@ jobs:
     uses: ./.github/workflows/publish.yml
     with:
       dry_run: false
-      tag_name: ${{ needs.release-please.outputs.tag-name }}
