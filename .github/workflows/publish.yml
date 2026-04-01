@@ -56,7 +56,7 @@ jobs:
           token: ${{secrets.GITHUB_TOKEN}}
 
       - name: Attest build provenance
-        if: ${{ !inputs.dry_run }}
+        if: ${{ format('{0}', inputs.dry_run) == 'false' }}
         uses: actions/attest@v4
         with:
           subject-path: 'launchdarkly-server-sdk-ai-*.gem'
