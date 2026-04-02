@@ -6,10 +6,6 @@ on:
         description: 'Is this a dry run. If so no package will be published.'
         type: boolean
         required: true
-      tag_name:
-        description: 'The tag name to use for the provenance file'
-        type: string
-        required: true
 
   workflow_dispatch:
     inputs:
@@ -25,8 +21,7 @@ jobs:
     permissions:
       id-token: write
       contents: write # Needed in this case to write github pages.
-    outputs:
-      gem-hash: ${{ steps.publish.outputs.gem-hash}}
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -56,14 +51,8 @@ jobs:
         with:
           token: ${{secrets.GITHUB_TOKEN}}
 
-  release-provenance:
-    needs: [ 'build-publish' ]
-    permissions:
-      actions: read
-      id-token: write
-      contents: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
-    with:
-      base64-subjects: "${{ needs.build-publish.outputs.gem-hash }}"
-      upload-assets: ${{ !inputs.dry_run }}
-      upload-tag-name: ${{ needs.release-package.outputs.upload-tag-name }}
+      - name: Attest build provenance
+        if: ${{ format('{0}', inputs.dry_run) == 'false' }}
+        uses: actions/attest@v4
+        with:
+          subject-path: 'launchdarkly-server-sdk-ai-*.gem'
