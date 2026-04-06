@@ -9,7 +9,7 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Contents and pull-requests are for release-please to make releases.
+      contents: write # Needed for release-please to create releases.
       issues: write # Needed to create labels
       pull-requests: write
     outputs:
