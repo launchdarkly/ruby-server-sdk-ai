@@ -27,7 +27,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   end
 
   let(:context) { LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' }) }
-  let(:tracker_flag_data) { { variationKey: 'test-variation', configKey: 'test-config', version: 1, modelName: 'fakeModel', providerName: 'fakeProvider' } }
+  let(:tracker_flag_data) { { runId: kind_of(String), variationKey: 'test-variation', configKey: 'test-config', version: 1, modelName: 'fakeModel', providerName: 'fakeProvider' } }
   let(:tracker) do
     described_class.new(
       ld_client: ld_client,
@@ -322,15 +322,9 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       expect(tracker.summary.success).to be false
     end
 
-    it 'overwrites success with error if both are tracked' do
+    it 'does not track error if success has already been tracked' do
       expect(ld_client).to receive(:track).with(
         '$ld:ai:generation:success',
-        context,
-        tracker_flag_data,
-        1
-      )
-      expect(ld_client).to receive(:track).with(
-        '$ld:ai:generation:error',
         context,
         tracker_flag_data,
         1
@@ -339,7 +333,95 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       tracker.track_success
       expect(tracker.summary.success).to be true
       tracker.track_error
+      expect(tracker.summary.success).to be true
+    end
+  end
+
+  describe 'at-most-once tracking' do
+    it 'only tracks duration once' do
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:duration:total',
+        context,
+        tracker_flag_data,
+        100
+      ).once
+      tracker.track_duration(100)
+      tracker.track_duration(200)
+      expect(tracker.summary.duration).to eq(100)
+    end
+
+    it 'only tracks time to first token once' do
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:tokens:ttf',
+        context,
+        tracker_flag_data,
+        100
+      ).once
+      tracker.track_time_to_first_token(100)
+      tracker.track_time_to_first_token(200)
+      expect(tracker.summary.time_to_first_token).to eq(100)
+    end
+
+    it 'only tracks tokens once' do
+      tokens1 = LaunchDarkly::Server::AI::TokenUsage.new(total: 300, input: 200, output: 100)
+      tokens2 = LaunchDarkly::Server::AI::TokenUsage.new(total: 600, input: 400, output: 200)
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:tokens:total',
+        context,
+        tracker_flag_data,
+        300
+      ).once
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:tokens:input',
+        context,
+        tracker_flag_data,
+        200
+      ).once
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:tokens:output',
+        context,
+        tracker_flag_data,
+        100
+      ).once
+      tracker.track_tokens(tokens1)
+      tracker.track_tokens(tokens2)
+      expect(tracker.summary.usage).to eq(tokens1)
+    end
+
+    it 'only tracks success once' do
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:generation:success',
+        context,
+        tracker_flag_data,
+        1
+      ).once
+      tracker.track_success
+      tracker.track_success
+      expect(tracker.summary.success).to be true
+    end
+
+    it 'only tracks error once' do
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:generation:error',
+        context,
+        tracker_flag_data,
+        1
+      ).once
+      tracker.track_error
+      tracker.track_error
       expect(tracker.summary.success).to be false
+    end
+
+    it 'only tracks feedback once' do
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:feedback:user:positive',
+        context,
+        tracker_flag_data,
+        1
+      ).once
+      tracker.track_feedback(kind: :positive)
+      tracker.track_feedback(kind: :negative)
+      expect(tracker.summary.feedback).to eq(:positive)
     end
   end
 
@@ -370,11 +452,14 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   end
 
   describe '#flag_data' do
-    it 'includes model_name and provider_name in flag data' do
-      expect(tracker.send(:flag_data)).to include(
+    it 'includes runId, model_name, and provider_name in flag data' do
+      flag_data = tracker.send(:flag_data)
+      expect(flag_data).to include(
+        runId: kind_of(String),
         modelName: 'fakeModel',
         providerName: 'fakeProvider'
       )
+      expect(flag_data[:runId]).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
     end
   end
 

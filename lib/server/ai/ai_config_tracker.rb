@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'ldclient-rb'
+require 'securerandom'
 
 module LaunchDarkly
   module Server
@@ -64,6 +65,13 @@ module LaunchDarkly
           @provider_name = provider_name
           @context = context
           @summary = MetricSummary.new
+          @run_id = SecureRandom.uuid
+          @tracked_duration = false
+          @tracked_time_to_first_token = false
+          @tracked_tokens = false
+          @tracked_success = nil
+          @tracked_feedback = false
+          @logger = LaunchDarkly::Server::AI.default_logger
         end
 
         #
@@ -72,6 +80,11 @@ module LaunchDarkly
         # @param duration [Integer] The duration in milliseconds
         #
         def track_duration(duration)
+          if @tracked_duration
+            @logger&.warn("Duration has already been tracked for this execution.")
+            return
+          end
+          @tracked_duration = true
           @summary.duration = duration
           @ld_client.track(
             '$ld:ai:duration:total',
@@ -101,6 +114,11 @@ module LaunchDarkly
         # @param duration [Integer] The duration in milliseconds
         #
         def track_time_to_first_token(time_to_first_token)
+          if @tracked_time_to_first_token
+            @logger&.warn("Time to first token has already been tracked for this execution.")
+            return
+          end
+          @tracked_time_to_first_token = true
           @summary.time_to_first_token = time_to_first_token
           @ld_client.track(
             '$ld:ai:tokens:ttf',
@@ -116,6 +134,11 @@ module LaunchDarkly
         # @param kind [Symbol] The kind of feedback (:positive or :negative)
         #
         def track_feedback(kind:)
+          if @tracked_feedback
+            @logger&.warn("Feedback has already been tracked for this execution.")
+            return
+          end
+          @tracked_feedback = true
           @summary.feedback = kind
           event_name = kind == :positive ? '$ld:ai:feedback:user:positive' : '$ld:ai:feedback:user:negative'
           @ld_client.track(
@@ -130,6 +153,11 @@ module LaunchDarkly
         # Track a successful AI generation
         #
         def track_success
+          unless @tracked_success.nil?
+            @logger&.warn("Success or error has already been tracked for this execution.")
+            return
+          end
+          @tracked_success = true
           @summary.success = true
           @ld_client.track(
             '$ld:ai:generation:success',
@@ -143,6 +171,11 @@ module LaunchDarkly
         # Track an error in AI generation
         #
         def track_error
+          unless @tracked_success.nil?
+            @logger&.warn("Success or error has already been tracked for this execution.")
+            return
+          end
+          @tracked_success = false
           @summary.success = false
           @ld_client.track(
             '$ld:ai:generation:error',
@@ -158,6 +191,11 @@ module LaunchDarkly
         # @param token_usage [TokenUsage] An object containing token usage details
         #
         def track_tokens(token_usage)
+          if @tracked_tokens
+            @logger&.warn("Tokens have already been tracked for this execution.")
+            return
+          end
+          @tracked_tokens = true
           @summary.usage = token_usage
           if token_usage.total.positive?
             @ld_client.track(
@@ -223,6 +261,7 @@ module LaunchDarkly
 
         private def flag_data
           {
+            runId: @run_id,
             variationKey: @variation_key,
             configKey: @config_key,
             version: @version,
