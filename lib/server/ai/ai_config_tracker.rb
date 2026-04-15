@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'base64'
+require 'json'
 require 'ldclient-rb'
 require 'securerandom'
 
@@ -56,7 +58,7 @@ module LaunchDarkly
         # @param provider_name [String] The name of the AI provider
         # @param context [LDContext] The context used for the flag evaluation
         #
-        def initialize(ld_client:, variation_key:, config_key:, version:, model_name:, provider_name:, context:)
+        def initialize(ld_client:, variation_key:, config_key:, version:, model_name:, provider_name:, context:, run_id:)
           @ld_client = ld_client
           @variation_key = variation_key
           @config_key = config_key
@@ -65,13 +67,56 @@ module LaunchDarkly
           @provider_name = provider_name
           @context = context
           @summary = MetricSummary.new
-          @run_id = SecureRandom.uuid
+          @run_id = run_id
           @tracked_duration = false
           @tracked_time_to_first_token = false
           @tracked_tokens = false
           @tracked_success = nil
           @tracked_feedback = false
           @logger = LaunchDarkly::Server::AI.default_logger
+        end
+
+        #
+        # Returns a URL-safe Base64-encoded JSON token that can be used to reconstruct
+        # a tracker in a different process (e.g. for deferred feedback).
+        #
+        # The token contains: runId, configKey, variationKey, version.
+        # modelName and providerName are NOT included.
+        #
+        # @return [String] the resumption token
+        #
+        def resumption_token
+          payload = {
+            runId: @run_id,
+            configKey: @config_key,
+            variationKey: @variation_key,
+            version: @version,
+          }
+          Base64.urlsafe_encode64(JSON.generate(payload), padding: false)
+        end
+
+        #
+        # Reconstructs a tracker from a resumption token.
+        #
+        # @param token [String] A URL-safe Base64-encoded JSON resumption token
+        # @param ld_client [LDClient] The LaunchDarkly client instance
+        # @param context [LDContext] The context for track events
+        # @return [AIConfigTracker] A new tracker instance
+        #
+        def self.from_resumption_token(token:, ld_client:, context:)
+          json = Base64.urlsafe_decode64(token)
+          payload = JSON.parse(json)
+
+          new(
+            ld_client: ld_client,
+            run_id: payload['runId'],
+            config_key: payload['configKey'],
+            variation_key: payload.fetch('variationKey', ''),
+            version: payload['version'],
+            model_name: '',
+            provider_name: '',
+            context: context
+          )
         end
 
         #

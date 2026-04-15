@@ -227,8 +227,9 @@ RSpec.describe LaunchDarkly::Server::AI do
 
         expect(config.provider).not_to be_nil
         expect(config.provider.name).to eq('fakeProvider')
-        expect(config.tracker).not_to be_nil
-        expect(config.tracker.send(:flag_data)).to include(
+        tracker = config.create_tracker
+        expect(tracker).not_to be_nil
+        expect(tracker.send(:flag_data)).to include(
           modelName: 'fakeModel',
           providerName: 'fakeProvider'
         )
@@ -353,8 +354,9 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(config.model).to be_nil
         expect(config.messages).to be_nil
         expect(config.provider).to be_nil
-        expect(config.tracker).not_to be_nil
-        expect(config.tracker.send(:flag_data)).to include(
+        tracker = config.create_tracker
+        expect(tracker).not_to be_nil
+        expect(tracker.send(:flag_data)).to include(
           modelName: '',
           providerName: ''
         )
@@ -374,6 +376,74 @@ RSpec.describe LaunchDarkly::Server::AI do
         config = ai_client.completion_config(key: 'missing-flag', context:, default: nil)
 
         expect(config.enabled).to be false
+      end
+
+      it 'create_tracker returns a new tracker with a fresh runId each time' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker1 = config.create_tracker
+        tracker2 = config.create_tracker
+
+        expect(tracker1).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
+        expect(tracker2).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
+        expect(tracker1).not_to equal(tracker2)
+
+        run_id1 = tracker1.send(:flag_data)[:runId]
+        run_id2 = tracker2.send(:flag_data)[:runId]
+        expect(run_id1).not_to eq(run_id2)
+        expect(run_id1).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+        expect(run_id2).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+      end
+
+      it 'create_tracker preserves flag metadata across calls' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker = config.create_tracker
+        flag_data = tracker.send(:flag_data)
+
+        expect(flag_data[:configKey]).to eq('model-config')
+        expect(flag_data[:variationKey]).to eq('abcd')
+        expect(flag_data[:version]).to eq(1)
+        expect(flag_data[:modelName]).to eq('fakeModel')
+        expect(flag_data[:providerName]).to eq('fakeProvider')
+      end
+
+      it 'create_tracker returns nil for static disabled config' do
+        config = LaunchDarkly::Server::AI::AIConfig.disabled
+        expect(config.create_tracker).to be_nil
+      end
+
+      it 'round-trips a tracker through a resumption token via client create_tracker' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker = config.create_tracker
+        token = tracker.resumption_token
+        original_run_id = tracker.send(:flag_data)[:runId]
+
+        restored = ai_client.create_tracker(token: token, context: context)
+
+        expect(restored).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
+        expect(restored.send(:flag_data)[:runId]).to eq(original_run_id)
+        expect(restored.send(:flag_data)[:configKey]).to eq('model-config')
+        expect(restored.send(:flag_data)[:modelName]).to eq('')
+        expect(restored.send(:flag_data)[:providerName]).to eq('')
+      end
+
+      it 'each tracker has independent at-most-once tracking' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker1 = config.create_tracker
+        tracker2 = config.create_tracker
+
+        tracker1.track_duration(100)
+        tracker2.track_duration(200)
+
+        expect(tracker1.summary.duration).to eq(100)
+        expect(tracker2.summary.duration).to eq(200)
       end
     end
 

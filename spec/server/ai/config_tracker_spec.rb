@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'base64'
+require 'json'
+require 'securerandom'
 require 'launchdarkly-server-sdk'
 require 'launchdarkly-server-sdk-ai'
 
@@ -31,6 +34,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   let(:tracker) do
     described_class.new(
       ld_client: ld_client,
+      run_id: SecureRandom.uuid,
       config_key: tracker_flag_data[:configKey],
       context: context,
       variation_key: tracker_flag_data[:variationKey],
@@ -460,6 +464,94 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         providerName: 'fakeProvider'
       )
       expect(flag_data[:runId]).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+    end
+  end
+
+  describe '#resumption_token' do
+    it 'returns a URL-safe base64-encoded JSON string' do
+      token = tracker.resumption_token
+      decoded = JSON.parse(Base64.urlsafe_decode64(token))
+
+      expect(decoded['runId']).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+      expect(decoded['configKey']).to eq('test-config')
+      expect(decoded['variationKey']).to eq('test-variation')
+      expect(decoded['version']).to eq(1)
+    end
+
+    it 'does not include modelName or providerName' do
+      token = tracker.resumption_token
+      decoded = JSON.parse(Base64.urlsafe_decode64(token))
+
+      expect(decoded).not_to have_key('modelName')
+      expect(decoded).not_to have_key('providerName')
+    end
+
+    it 'contains the same runId as the tracker flag data' do
+      flag_data = tracker.send(:flag_data)
+      token = tracker.resumption_token
+      decoded = JSON.parse(Base64.urlsafe_decode64(token))
+
+      expect(decoded['runId']).to eq(flag_data[:runId])
+    end
+  end
+
+  describe '.from_resumption_token' do
+    it 'reconstructs a tracker that uses the same runId' do
+      original_token = tracker.resumption_token
+      original_run_id = tracker.send(:flag_data)[:runId]
+
+      restored = described_class.from_resumption_token(
+        token: original_token,
+        ld_client: ld_client,
+        context: context
+      )
+
+      expect(restored.send(:flag_data)[:runId]).to eq(original_run_id)
+      expect(restored.send(:flag_data)[:configKey]).to eq('test-config')
+      expect(restored.send(:flag_data)[:variationKey]).to eq('test-variation')
+      expect(restored.send(:flag_data)[:version]).to eq(1)
+    end
+
+    it 'sets modelName and providerName to empty strings' do
+      token = tracker.resumption_token
+
+      restored = described_class.from_resumption_token(
+        token: token,
+        ld_client: ld_client,
+        context: context
+      )
+
+      expect(restored.send(:flag_data)[:modelName]).to eq('')
+      expect(restored.send(:flag_data)[:providerName]).to eq('')
+    end
+
+    it 'can track events with the restored tracker' do
+      token = tracker.resumption_token
+      original_run_id = tracker.send(:flag_data)[:runId]
+
+      restored = described_class.from_resumption_token(
+        token: token,
+        ld_client: ld_client,
+        context: context
+      )
+
+      expected_data = {
+        runId: original_run_id,
+        variationKey: 'test-variation',
+        configKey: 'test-config',
+        version: 1,
+        modelName: '',
+        providerName: '',
+      }
+
+      expect(ld_client).to receive(:track).with(
+        '$ld:ai:feedback:user:positive',
+        context,
+        expected_data,
+        1
+      )
+
+      restored.track_feedback(kind: :positive)
     end
   end
 

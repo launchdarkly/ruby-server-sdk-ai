@@ -2,6 +2,7 @@
 
 require 'ldclient-rb'
 require 'mustache'
+require 'securerandom'
 require_relative 'ai_config_tracker'
 require_relative 'sdk_info'
 
@@ -103,14 +104,24 @@ module LaunchDarkly
       # The AIConfig class represents an AI configuration.
       #
       class AIConfig
-        attr_reader :enabled, :messages, :tracker, :model, :provider
+        attr_reader :enabled, :messages, :model, :provider
 
-        def initialize(enabled: nil, model: nil, messages: nil, tracker: nil, provider: nil)
+        def initialize(enabled: nil, model: nil, messages: nil, tracker_factory: nil, provider: nil)
           @enabled = enabled
           @messages = messages
-          @tracker = tracker
+          @tracker_factory = tracker_factory
           @model = model
           @provider = provider
+        end
+
+        #
+        # Creates a new tracker with a fresh runId for tracking a single AI execution.
+        # Returns nil when the config has no tracker factory (e.g. a static disabled config).
+        #
+        # @return [AIConfigTracker, nil] a new tracker instance, or nil
+        #
+        def create_tracker
+          @tracker_factory&.call
         end
 
         #
@@ -182,6 +193,18 @@ module LaunchDarkly
           _completion_config(key:, context:, default: default || AIConfig.disabled, variables:)
         end
 
+        #
+        # Reconstructs a tracker from a resumption token, allowing deferred tracking
+        # (e.g. feedback from a different process).
+        #
+        # @param token [String] A resumption token obtained from AIConfigTracker#resumption_token
+        # @param context [LDContext] The context for track events
+        # @return [AIConfigTracker] A new tracker instance
+        #
+        def create_tracker(token:, context:)
+          AIConfigTracker.from_resumption_token(token: token, ld_client: @ld_client, context: context)
+        end
+
         # @deprecated Use {#completion_config} instead.
         def config(key:, context:, default: nil, variables: nil)
           warn '[DEPRECATION] `config` is deprecated. Use `completion_config` instead.'
@@ -226,20 +249,28 @@ module LaunchDarkly
             )
           end
 
-          tracker = LaunchDarkly::Server::AI::AIConfigTracker.new(
-            ld_client: @ld_client,
-            variation_key: variation.dig(:_ldMeta, :variationKey) || '',
-            config_key: key,
-            version: variation.dig(:_ldMeta, :version) || 1,
-            model_name: model&.name || '',
-            provider_name: provider_config&.name || '',
-            context:
-          )
+          variation_key = variation.dig(:_ldMeta, :variationKey) || ''
+          version = variation.dig(:_ldMeta, :version) || 1
+          model_name = model&.name || ''
+          provider_name = provider_config&.name || ''
+
+          tracker_factory = lambda {
+            LaunchDarkly::Server::AI::AIConfigTracker.new(
+              ld_client: @ld_client,
+              run_id: SecureRandom.uuid,
+              variation_key: variation_key,
+              config_key: key,
+              version: version,
+              model_name: model_name,
+              provider_name: provider_name,
+              context: context
+            )
+          }
 
           AIConfig.new(
             enabled: variation.dig(:_ldMeta, :enabled) || false,
             messages:,
-            tracker:,
+            tracker_factory:,
             model:,
             provider: provider_config
           )
