@@ -57,7 +57,7 @@ module LaunchDarkly
         # @param provider_name [String] The name of the AI provider
         # @param context [LDContext] The context used for the flag evaluation
         #
-        def initialize(ld_client:, run_id:, config_key:, variation_key:, version:, model_name:, provider_name:, context:)
+        def initialize(ld_client:, run_id:, config_key:, variation_key:, version:, context:, model_name:, provider_name:)
           @ld_client = ld_client
           @variation_key = variation_key
           @config_key = config_key
@@ -80,12 +80,9 @@ module LaunchDarkly
         # @return [String] the resumption token
         #
         def resumption_token
-          payload = {
-            runId: @run_id,
-            configKey: @config_key,
-            variationKey: @variation_key,
-            version: @version,
-          }
+          payload = { runId: @run_id, configKey: @config_key }
+          payload[:variationKey] = @variation_key if @variation_key && !@variation_key.empty?
+          payload[:version] = @version
           Base64.urlsafe_encode64(JSON.generate(payload), padding: false)
         end
 
@@ -105,11 +102,11 @@ module LaunchDarkly
             ld_client: ld_client,
             run_id: payload['runId'],
             config_key: payload['configKey'],
-            variation_key: payload.fetch('variationKey', ''),
+            variation_key: payload.fetch('variationKey', nil),
             version: payload['version'],
+            context: context,
             model_name: '',
-            provider_name: '',
-            context: context
+            provider_name: ''
           )
         end
 
