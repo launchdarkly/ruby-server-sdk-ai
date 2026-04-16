@@ -57,7 +57,7 @@ module LaunchDarkly
         # @param provider_name [String] The name of the AI provider
         # @param context [LDContext] The context used for the flag evaluation
         #
-        def initialize(ld_client:, variation_key:, config_key:, version:, model_name:, provider_name:, context:, run_id:)
+        def initialize(ld_client:, run_id:, config_key:, variation_key:, version:, model_name:, provider_name:, context:)
           @ld_client = ld_client
           @variation_key = variation_key
           @config_key = config_key
