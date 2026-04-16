@@ -3,7 +3,6 @@
 require 'base64'
 require 'json'
 require 'ldclient-rb'
-require 'securerandom'
 
 module LaunchDarkly
   module Server
