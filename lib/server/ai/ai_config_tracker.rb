@@ -290,14 +290,15 @@ module LaunchDarkly
         end
 
         private def flag_data
-          {
+          data = {
             runId: @run_id,
-            variationKey: @variation_key,
             configKey: @config_key,
             version: @version,
             modelName: @model_name,
             providerName: @provider_name,
           }
+          data[:variationKey] = @variation_key if @variation_key && !@variation_key.empty?
+          data
         end
 
         private def openai_to_token_usage(usage)
