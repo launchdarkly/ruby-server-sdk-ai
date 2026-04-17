@@ -123,15 +123,6 @@ module LaunchDarkly
           @tracker_factory.call
         end
 
-        #
-        # Returns a new disabled AIConfig instance.
-        #
-        # @return [AIConfig] a new disabled config
-        #
-        def self.disabled
-          new(enabled: false)
-        end
-
         def to_h
           {
             _ldMeta: {
@@ -149,6 +140,9 @@ module LaunchDarkly
       #
       TRACK_SDK_INFO = '$ld:ai:sdk:info'
       TRACK_USAGE_COMPLETION_CONFIG = '$ld:ai:usage:completion-config'
+
+      # Internal fallback used when no default config is provided. Not part of the public API.
+      DISABLED_AI_CONFIG_DEFAULT = { _ldMeta: { enabled: false } }.freeze
 
       INIT_TRACK_CONTEXT = LaunchDarkly::LDContext.create({
         kind: 'ld_ai',
@@ -189,7 +183,7 @@ module LaunchDarkly
         def completion_config(key:, context:, default: nil, variables: nil)
           @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, key, 1)
 
-          _completion_config(key:, context:, default: default || AIConfig.disabled, variables:)
+          _completion_config(key:, context:, default: default || DISABLED_AI_CONFIG_DEFAULT, variables:)
         end
 
         #
