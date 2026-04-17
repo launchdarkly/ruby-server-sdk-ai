@@ -410,9 +410,13 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(flag_data[:providerName]).to eq('fakeProvider')
       end
 
-      it 'create_tracker returns nil for static disabled config' do
-        config = LaunchDarkly::Server::AI::AIConfig.disabled
-        expect(config.create_tracker).to be_nil
+      it 'create_tracker returns a tracker even for disabled configs from evaluation' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'off-config', context:)
+
+        expect(config.enabled).to be false
+        tracker = config.create_tracker
+        expect(tracker).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
       end
 
       it 'round-trips a tracker through a resumption token via client create_tracker' do

@@ -116,12 +116,11 @@ module LaunchDarkly
 
         #
         # Creates a new tracker with a fresh runId for tracking a single AI execution.
-        # Returns nil when the config has no tracker factory (e.g. a static disabled config).
         #
-        # @return [AIConfigTracker, nil] a new tracker instance, or nil
+        # @return [AIConfigTracker] a new tracker instance
         #
         def create_tracker
-          @tracker_factory&.call
+          @tracker_factory.call
         end
 
         #
