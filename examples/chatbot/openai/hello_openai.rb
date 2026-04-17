@@ -35,10 +35,13 @@ class Chatbot
     @openai_client = openai_client
   end
 
+  # Returns [response_content, resumption_token]. The resumption token can be
+  # used to reconstruct a tracker for deferred operations like feedback.
   def ask_agent(question)
     @messages << LaunchDarkly::Server::AI::Message.new('user', question)
+    tracker = @ai_config.create_tracker
     begin
-      completion = ai_config.tracker.track_openai_metrics do
+      completion = tracker.track_openai_metrics do
         @openai_client.chat.completions.create(
           model: ai_config.model.name,
           messages: @messages.map(&:to_h)
@@ -46,15 +49,17 @@ class Chatbot
       end
       response_content = completion[:choices][0][:message][:content]
       @messages << LaunchDarkly::Server::AI::Message.new('assistant', response_content)
-      response_content
+      [response_content, tracker.resumption_token]
     rescue StandardError => e
-      "An error occurred: #{e.message}"
+      ["An error occurred: #{e.message}", nil]
     end
   end
 
-  def agent_was_helpful(helpful)
+  def agent_was_helpful(helpful, tracker)
+    return if tracker.nil?
+
     kind = helpful ? :positive : :negative
-    ai_config.tracker.track_feedback(kind: kind)
+    tracker.track_feedback(kind: kind)
   end
 end
 
@@ -94,18 +99,27 @@ end
 
 chatbot = Chatbot.new(ai_config, OpenAI::Client.new(api_key: openai_api_key))
 
+last_resumption_token = nil
+
 loop do
   print "Ask a question (or type 'exit'): "
   question = gets&.chomp
   break if question.nil? || question.strip.downcase == 'exit'
 
-  response = chatbot.ask_agent(question)
+  response, last_resumption_token = chatbot.ask_agent(question)
   puts "AI Response: #{response}"
 end
 
 print "Was the chat helpful? [yes/no]: "
 feedback = gets&.chomp
 
-chatbot.agent_was_helpful(feedback == 'yes') unless feedback.nil?
+unless feedback.nil? || last_resumption_token.nil?
+  tracker = LaunchDarkly::Server::AI::AIConfigTracker.from_resumption_token(
+    token: last_resumption_token,
+    ld_client:,
+    context:
+  )
+  chatbot.agent_was_helpful(feedback == 'yes', tracker)
+end
 
 ld_client.close
