@@ -461,6 +461,21 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(config.provider).to be_nil
       end
 
+      it 'disabled class method returns a disabled AIConfigDefault' do
+        config = described_class.disabled
+        expect(config).to be_a(described_class)
+        expect(config.enabled).to be false
+        expect(config.messages).to be_nil
+        expect(config.model).to be_nil
+        expect(config.provider).to be_nil
+      end
+
+      it 'disabled class method returns a new instance each call' do
+        first = described_class.disabled
+        second = described_class.disabled
+        expect(first).not_to be(second)
+      end
+
       it 'serializes to a hash matching the variation format' do
         model = LaunchDarkly::Server::AI::ModelConfig.new(name: 'test-model')
         messages = [LaunchDarkly::Server::AI::Message.new('system', 'Hello')]

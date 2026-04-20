@@ -110,6 +110,10 @@ module LaunchDarkly
       class AIConfigDefault
         attr_reader :enabled, :messages, :model, :provider
 
+        def self.disabled
+          new(enabled: false)
+        end
+
         def initialize(enabled: false, model: nil, messages: nil, provider: nil)
           @enabled = enabled
           @messages = messages
