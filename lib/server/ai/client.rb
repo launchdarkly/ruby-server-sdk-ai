@@ -101,12 +101,45 @@ module LaunchDarkly
       end
 
       #
-      # The AIConfig class represents an AI configuration.
+      # The AIConfigDefault class represents a user-provided fallback AI configuration.
+      #
+      # Pass an instance of this class as the +default:+ parameter to
+      # {Client#completion_config} to control the fallback values when a flag
+      # is not found or cannot be evaluated.
+      #
+      class AIConfigDefault
+        attr_reader :enabled, :messages, :model, :provider
+
+        def initialize(enabled: false, model: nil, messages: nil, provider: nil)
+          @enabled = enabled
+          @messages = messages
+          @model = model
+          @provider = provider
+        end
+
+        def to_h
+          {
+            _ldMeta: {
+              enabled: @enabled || false,
+            },
+            messages: @messages.is_a?(Array) ? @messages.map { |msg| msg&.to_h } : nil,
+            model: @model&.to_h,
+            provider: @provider&.to_h,
+          }
+        end
+      end
+
+      #
+      # The AIConfig class represents an AI configuration returned by the SDK.
+      #
+      # Instances are created by {Client#completion_config} and always include
+      # a {#create_tracker} factory. Do not instantiate directly — use
+      # {AIConfigDefault} for fallback values.
       #
       class AIConfig
         attr_reader :enabled, :messages, :model, :provider
 
-        def initialize(enabled: nil, model: nil, messages: nil, tracker_factory: nil, provider: nil)
+        def initialize(enabled: nil, model: nil, messages: nil, tracker_factory:, provider: nil)
           @enabled = enabled
           @messages = messages
           @tracker_factory = tracker_factory
@@ -176,7 +209,7 @@ module LaunchDarkly
         #
         # @param key [String] The key of the configuration flag
         # @param context [LDContext] The context used when evaluating the flag
-        # @param default [AIConfig] The default value to use if the flag is not found
+        # @param default [AIConfigDefault] The default value to use if the flag is not found
         # @param variables [Hash] Optional variables for rendering messages
         # @return [AIConfig] An AIConfig instance containing the configuration data
         #
