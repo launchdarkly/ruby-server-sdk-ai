@@ -140,15 +140,10 @@ module LaunchDarkly
       # a {#create_tracker} factory. Do not instantiate directly — use
       # {AIConfigDefault} for fallback values.
       #
-      class AIConfig
-        attr_reader :enabled, :messages, :model, :provider
-
+      class AIConfig < AIConfigDefault
         def initialize(tracker_factory:, enabled: nil, model: nil, messages: nil, provider: nil)
-          @enabled = enabled
-          @messages = messages
+          super(enabled: enabled, model: model, messages: messages, provider: provider)
           @tracker_factory = tracker_factory
-          @model = model
-          @provider = provider
         end
 
         #
@@ -158,17 +153,6 @@ module LaunchDarkly
         #
         def create_tracker
           @tracker_factory.call
-        end
-
-        def to_h
-          {
-            _ldMeta: {
-              enabled: @enabled || false,
-            },
-            messages: @messages.is_a?(Array) ? @messages.map { |msg| msg&.to_h } : nil,
-            model: @model&.to_h,
-            provider: @provider&.to_h,
-          }
         end
       end
 
