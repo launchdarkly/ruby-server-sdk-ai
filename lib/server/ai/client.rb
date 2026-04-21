@@ -143,7 +143,7 @@ module LaunchDarkly
       class AIConfig
         attr_reader :enabled, :messages, :model, :provider
 
-        def initialize(enabled: nil, model: nil, messages: nil, tracker_factory:, provider: nil)
+        def initialize(tracker_factory:, enabled: nil, model: nil, messages: nil, provider: nil)
           @enabled = enabled
           @messages = messages
           @tracker_factory = tracker_factory
