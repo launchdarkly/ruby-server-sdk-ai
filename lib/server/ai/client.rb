@@ -178,9 +178,6 @@ module LaunchDarkly
       TRACK_SDK_INFO = '$ld:ai:sdk:info'
       TRACK_USAGE_COMPLETION_CONFIG = '$ld:ai:usage:completion-config'
 
-      # Internal fallback used when no default config is provided. Not part of the public API.
-      DISABLED_AI_CONFIG_DEFAULT = { _ldMeta: { enabled: false } }.freeze
-
       INIT_TRACK_CONTEXT = LaunchDarkly::LDContext.create({
         kind: 'ld_ai',
         key: 'ld-internal-tracking',
@@ -220,7 +217,7 @@ module LaunchDarkly
         def completion_config(key:, context:, default: nil, variables: nil)
           @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, key, 1)
 
-          _completion_config(key:, context:, default: default || DISABLED_AI_CONFIG_DEFAULT, variables:)
+          _completion_config(key:, context:, default: default || AIConfigDefault.disabled, variables:)
         end
 
         #
