@@ -117,7 +117,7 @@ module LaunchDarkly
         #
         def track_duration(duration)
           unless @summary.duration.nil?
-            @logger&.warn("Duration has already been tracked for this execution. #{flag_data}")
+            @logger&.warn("Skipping track_duration: duration already recorded on this tracker. Call create_tracker on the AI Config for a new run. #{flag_data}")
             return
           end
           @summary.duration = duration
@@ -150,7 +150,7 @@ module LaunchDarkly
         #
         def track_time_to_first_token(time_to_first_token)
           unless @summary.time_to_first_token.nil?
-            @logger&.warn("Time to first token has already been tracked for this execution. #{flag_data}")
+            @logger&.warn("Skipping track_time_to_first_token: time-to-first-token already recorded on this tracker. Call create_tracker on the AI Config for a new run. #{flag_data}")
             return
           end
           @summary.time_to_first_token = time_to_first_token
@@ -169,7 +169,7 @@ module LaunchDarkly
         #
         def track_feedback(kind:)
           unless @summary.feedback.nil?
-            @logger&.warn("Feedback has already been tracked for this execution. #{flag_data}")
+            @logger&.warn("Skipping track_feedback: feedback already recorded on this tracker. Call create_tracker on the AI Config for a new run. #{flag_data}")
             return
           end
           @summary.feedback = kind
@@ -187,7 +187,7 @@ module LaunchDarkly
         #
         def track_success
           unless @summary.success.nil?
-            @logger&.warn("Success or error has already been tracked for this execution. #{flag_data}")
+            @logger&.warn("Skipping track_success: success/error already recorded on this tracker. Call create_tracker on the AI Config for a new run. #{flag_data}")
             return
           end
           @summary.success = true
@@ -204,7 +204,7 @@ module LaunchDarkly
         #
         def track_error
           unless @summary.success.nil?
-            @logger&.warn("Success or error has already been tracked for this execution. #{flag_data}")
+            @logger&.warn("Skipping track_error: success/error already recorded on this tracker. Call create_tracker on the AI Config for a new run. #{flag_data}")
             return
           end
           @summary.success = false
@@ -223,7 +223,7 @@ module LaunchDarkly
         #
         def track_tokens(token_usage)
           unless @summary.usage.nil?
-            @logger&.warn("Tokens have already been tracked for this execution. #{flag_data}")
+            @logger&.warn("Skipping track_tokens: token usage already recorded on this tracker. Call create_tracker on the AI Config for a new run. #{flag_data}")
             return
           end
           @summary.usage = token_usage
