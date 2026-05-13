@@ -48,8 +48,7 @@ module LaunchDarkly
       # correlate them in metrics views. See individual track methods for their
       # specific semantics. Call create_tracker on the AI Config to start a new
       # run. A resumption token preserves the runId, so events emitted by a
-      # tracker reconstructed in another process correlate with the original
-      # run.
+      # tracker reconstructed in another process share the original runId.
       #
       class AIConfigTracker
         attr_reader :ld_client, :config_key, :context, :variation_key, :version, :summary, :model_name, :provider_name
