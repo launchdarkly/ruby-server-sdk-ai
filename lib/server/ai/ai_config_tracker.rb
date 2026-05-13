@@ -162,7 +162,8 @@ module LaunchDarkly
         #
         def track_time_to_first_token(time_to_first_token)
           unless @summary.time_to_first_token.nil?
-            @logger&.warn("Skipping track_time_to_first_token: time-to-first-token already recorded on this tracker. Call create_tracker on the AI Config for a new run. #{flag_data}")
+            @logger&.warn("Skipping track_time_to_first_token: time-to-first-token already recorded on this tracker. " \
+                          "Call create_tracker on the AI Config for a new run. #{flag_data}")
             return
           end
           @summary.time_to_first_token = time_to_first_token
