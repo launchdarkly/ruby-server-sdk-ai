@@ -41,7 +41,15 @@ module LaunchDarkly
       end
 
       #
-      # The AIConfigTracker class is used to track AI configuration usage.
+      # The AIConfigTracker records metrics for a single AI run. Unless
+      # otherwise noted, the tracker's methods are not safe for concurrent use.
+      #
+      # All events a tracker emits share a runId (a UUIDv4) so LaunchDarkly can
+      # correlate them in metrics views. See individual track methods for their
+      # specific semantics. Call create_tracker on the AI Config to start a new
+      # run. A resumption token preserves the runId, so events emitted by a
+      # tracker reconstructed in another process correlate with the original
+      # run.
       #
       class AIConfigTracker
         attr_reader :ld_client, :config_key, :context, :variation_key, :version, :summary, :model_name, :provider_name
@@ -111,7 +119,9 @@ module LaunchDarkly
         end
 
         #
-        # Track the duration of an AI operation
+        # Track the duration of an AI run.
+        #
+        # Records at most once per Tracker; further calls are ignored.
         #
         # @param duration [Integer] The duration in milliseconds
         #
@@ -144,7 +154,9 @@ module LaunchDarkly
         end
 
         #
-        # Track time to first token
+        # Track time to first token.
+        #
+        # Records at most once per Tracker; further calls are ignored.
         #
         # @param duration [Integer] The duration in milliseconds
         #
@@ -163,7 +175,9 @@ module LaunchDarkly
         end
 
         #
-        # Track user feedback
+        # Track user feedback.
+        #
+        # Records at most once per Tracker; further calls are ignored.
         #
         # @param kind [Symbol] The kind of feedback (:positive or :negative)
         #
@@ -183,7 +197,11 @@ module LaunchDarkly
         end
 
         #
-        # Track a successful AI generation
+        # Track a successful AI generation.
+        #
+        # Records at most once per Tracker. track_success and track_error share
+        # state; only one of the two can record per Tracker, and subsequent
+        # calls are ignored.
         #
         def track_success
           unless @summary.success.nil?
@@ -200,7 +218,11 @@ module LaunchDarkly
         end
 
         #
-        # Track an error in AI generation
+        # Track an error in AI generation.
+        #
+        # Records at most once per Tracker. track_success and track_error share
+        # state; only one of the two can record per Tracker, and subsequent
+        # calls are ignored.
         #
         def track_error
           unless @summary.success.nil?
@@ -217,7 +239,9 @@ module LaunchDarkly
         end
 
         #
-        # Track token usage
+        # Track token usage.
+        #
+        # Records at most once per Tracker; further calls are ignored.
         #
         # @param token_usage [TokenUsage] An object containing token usage details
         #
@@ -259,6 +283,10 @@ module LaunchDarkly
         # If the provided block raises, this method will also raise.
         # A failed operation will not have any token usage data.
         #
+        # Because each inner metric is at-most-once per Tracker, calling this
+        # twice on the same Tracker will run the inner block again but produce
+        # no additional metric events.
+        #
         # @yield The block to track.
         # @return The result of the tracked block.
         #
@@ -275,6 +303,10 @@ module LaunchDarkly
         #
         # Track AWS Bedrock conversation operations.
         # This method tracks the duration, token usage, and success/error status.
+        #
+        # Because each inner metric is at-most-once per Tracker, calling this
+        # twice on the same Tracker will run the inner block again but produce
+        # no additional metric events.
         #
         # @yield The block to track.
         # @return [Hash] The original response hash.

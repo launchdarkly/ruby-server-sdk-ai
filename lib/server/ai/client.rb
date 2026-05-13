@@ -147,7 +147,10 @@ module LaunchDarkly
         end
 
         #
-        # Creates a new tracker with a fresh runId for tracking a single AI execution.
+        # Creates a new tracker for a fresh AI run. Each call mints a new
+        # runId (a UUIDv4) that LaunchDarkly uses to correlate the run's
+        # events in metrics views. Call this once per AI run; metrics from
+        # different runIds cannot be combined.
         #
         # @return [AIConfigTracker] a new tracker instance
         #
