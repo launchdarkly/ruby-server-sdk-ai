@@ -283,9 +283,9 @@ module LaunchDarkly
         # If the provided block raises, this method will also raise.
         # A failed operation will not have any token usage data.
         #
-        # Because each inner metric is at-most-once per Tracker, calling this
-        # twice on the same Tracker will run the inner block again but produce
-        # no additional metric events.
+        # Subsequent calls re-run the inner block but emit only metrics not
+        # already recorded on this Tracker. Call create_tracker on the AI
+        # Config to start a new run.
         #
         # @yield The block to track.
         # @return The result of the tracked block.
@@ -304,9 +304,9 @@ module LaunchDarkly
         # Track AWS Bedrock conversation operations.
         # This method tracks the duration, token usage, and success/error status.
         #
-        # Because each inner metric is at-most-once per Tracker, calling this
-        # twice on the same Tracker will run the inner block again but produce
-        # no additional metric events.
+        # Subsequent calls re-run the inner block but emit only metrics not
+        # already recorded on this Tracker. Call create_tracker on the AI
+        # Config to start a new run.
         #
         # @yield The block to track.
         # @return [Hash] The original response hash.
