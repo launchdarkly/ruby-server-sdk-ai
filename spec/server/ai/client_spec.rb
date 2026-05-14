@@ -153,7 +153,7 @@ RSpec.describe LaunchDarkly::Server::AI do
                                                     temperature: 0.5, maxTokens: 4096
                                                   })
         messages = [LaunchDarkly::Server::AI::Message.new('system', 'Hello, {{name}}!')]
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: model,
           messages: messages
@@ -174,7 +174,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'interpolates variables in model config messages' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fakeModel'),
           messages: [LaunchDarkly::Server::AI::Message.new('system', 'Hello, {{name}}!')]
@@ -195,7 +195,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns config with messages interpolated as empty when no variables are provided' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fakeModel'),
           messages: []
@@ -216,7 +216,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'handles provider config correctly' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user', name: 'Sandy' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
@@ -227,8 +227,9 @@ RSpec.describe LaunchDarkly::Server::AI do
 
         expect(config.provider).not_to be_nil
         expect(config.provider.name).to eq('fakeProvider')
-        expect(config.tracker).not_to be_nil
-        expect(config.tracker.send(:flag_data)).to include(
+        tracker = config.create_tracker
+        expect(tracker).not_to be_nil
+        expect(tracker.send(:flag_data)).to include(
           modelName: 'fakeModel',
           providerName: 'fakeProvider'
         )
@@ -236,7 +237,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'interpolates context variables in messages using ldctx' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user', name: 'Sandy', last: 'Beaches' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
@@ -262,7 +263,7 @@ RSpec.describe LaunchDarkly::Server::AI do
         org_context = LaunchDarkly::LDContext.create({ key: 'org-key', kind: 'org', name: 'LaunchDarkly',
                                                        shortname: 'LD' })
         context = LaunchDarkly::LDContext.create_multi([user_context, org_context])
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
@@ -285,7 +286,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'handles multiple messages and variable interpolation' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
@@ -308,7 +309,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns disabled config when flag is off' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
@@ -325,7 +326,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns disabled config with nil model/messages/provider when initial config is disabled' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: true,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
@@ -341,7 +342,7 @@ RSpec.describe LaunchDarkly::Server::AI do
 
       it 'returns enabled config with nil model/messages/provider when initial config is enabled' do
         context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        default = LaunchDarkly::Server::AI::AIConfig.new(
+        default = LaunchDarkly::Server::AI::AIConfigDefault.new(
           enabled: false,
           model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'fake-model'),
           messages: []
@@ -353,8 +354,9 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(config.model).to be_nil
         expect(config.messages).to be_nil
         expect(config.provider).to be_nil
-        expect(config.tracker).not_to be_nil
-        expect(config.tracker.send(:flag_data)).to include(
+        tracker = config.create_tracker
+        expect(tracker).not_to be_nil
+        expect(tracker.send(:flag_data)).to include(
           modelName: '',
           providerName: ''
         )
@@ -375,21 +377,129 @@ RSpec.describe LaunchDarkly::Server::AI do
 
         expect(config.enabled).to be false
       end
+
+      it 'create_tracker returns a new tracker with a fresh runId each time' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker1 = config.create_tracker
+        tracker2 = config.create_tracker
+
+        expect(tracker1).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
+        expect(tracker2).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
+        expect(tracker1).not_to equal(tracker2)
+
+        run_id1 = tracker1.send(:flag_data)[:runId]
+        run_id2 = tracker2.send(:flag_data)[:runId]
+        expect(run_id1).not_to eq(run_id2)
+        expect(run_id1).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+        expect(run_id2).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+      end
+
+      it 'create_tracker preserves flag metadata across calls' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker = config.create_tracker
+        flag_data = tracker.send(:flag_data)
+
+        expect(flag_data[:configKey]).to eq('model-config')
+        expect(flag_data[:variationKey]).to eq('abcd')
+        expect(flag_data[:version]).to eq(1)
+        expect(flag_data[:modelName]).to eq('fakeModel')
+        expect(flag_data[:providerName]).to eq('fakeProvider')
+      end
+
+      it 'create_tracker returns a tracker even for disabled configs from evaluation' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'off-config', context:)
+
+        expect(config.enabled).to be false
+        tracker = config.create_tracker
+        expect(tracker).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
+      end
+
+      it 'round-trips a tracker through a resumption token via client create_tracker' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker = config.create_tracker
+        token = tracker.resumption_token
+        original_run_id = tracker.send(:flag_data)[:runId]
+
+        restored = ai_client.create_tracker(token: token, context: context)
+
+        expect(restored).to be_a(LaunchDarkly::Server::AI::AIConfigTracker)
+        expect(restored.send(:flag_data)[:runId]).to eq(original_run_id)
+        expect(restored.send(:flag_data)[:configKey]).to eq('model-config')
+        expect(restored.send(:flag_data)[:modelName]).to eq('')
+        expect(restored.send(:flag_data)[:providerName]).to eq('')
+      end
+
+      it 'each tracker has independent at-most-once tracking' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker1 = config.create_tracker
+        tracker2 = config.create_tracker
+
+        tracker1.track_duration(100)
+        tracker2.track_duration(200)
+
+        expect(tracker1.summary.duration).to eq(100)
+        expect(tracker2.summary.duration).to eq(200)
+      end
     end
 
     describe LaunchDarkly::Server::AI::AIConfig do
-      it 'disabled class method returns a disabled AIConfig' do
+      it 'does not expose a public disabled class method' do
+        expect(described_class).not_to respond_to(:disabled)
+      end
+
+      it 'requires a tracker_factory to construct' do
+        expect { described_class.new(enabled: false) }.to raise_error(ArgumentError, /tracker_factory/)
+      end
+
+      it 'is not a subclass of AIConfigDefault' do
+        expect(described_class.ancestors).not_to include(LaunchDarkly::Server::AI::AIConfigDefault)
+      end
+    end
+
+    describe LaunchDarkly::Server::AI::AIConfigDefault do
+      it 'defaults to a disabled configuration' do
+        config = described_class.new
+        expect(config).to be_a(described_class)
+        expect(config.enabled).to be false
+        expect(config.messages).to be_nil
+        expect(config.model).to be_nil
+        expect(config.provider).to be_nil
+      end
+
+      it 'disabled class method returns a disabled AIConfigDefault' do
         config = described_class.disabled
         expect(config).to be_a(described_class)
         expect(config.enabled).to be false
         expect(config.messages).to be_nil
         expect(config.model).to be_nil
+        expect(config.provider).to be_nil
       end
 
       it 'disabled class method returns a new instance each call' do
         first = described_class.disabled
         second = described_class.disabled
         expect(first).not_to be(second)
+      end
+
+      it 'serializes to a hash matching the variation format' do
+        model = LaunchDarkly::Server::AI::ModelConfig.new(name: 'test-model')
+        messages = [LaunchDarkly::Server::AI::Message.new('system', 'Hello')]
+        config = described_class.new(enabled: true, model: model, messages: messages)
+        hash = config.to_h
+
+        expect(hash[:_ldMeta][:enabled]).to be true
+        expect(hash[:model][:name]).to eq('test-model')
+        expect(hash[:messages].length).to eq(1)
+        expect(hash[:messages][0][:content]).to eq('Hello')
       end
     end
   end

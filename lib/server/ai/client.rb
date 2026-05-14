@@ -2,6 +2,7 @@
 
 require 'ldclient-rb'
 require 'mustache'
+require 'securerandom'
 require_relative 'ai_config_tracker'
 require_relative 'sdk_info'
 
@@ -100,26 +101,35 @@ module LaunchDarkly
       end
 
       #
-      # The AIConfig class represents an AI configuration.
+      # The AIConfigDefault class represents a user-provided fallback AI
+      # configuration.
       #
-      class AIConfig
-        attr_reader :enabled, :messages, :tracker, :model, :provider
-
-        def initialize(enabled: nil, model: nil, messages: nil, tracker: nil, provider: nil)
-          @enabled = enabled
-          @messages = messages
-          @tracker = tracker
-          @model = model
-          @provider = provider
-        end
+      # Pass an instance of this class as the +default:+ parameter to
+      # {Client#completion_config} to control the fallback values when a flag
+      # is not found or cannot be evaluated.
+      #
+      # This is an input-only type: it is what an application supplies to the
+      # SDK, never what the SDK returns. The SDK always returns an
+      # {AIConfig}, which carries a tracker factory; AIConfigDefault does not.
+      #
+      class AIConfigDefault
+        attr_reader :enabled, :messages, :model, :provider
 
         #
-        # Returns a new disabled AIConfig instance.
+        # Returns a new AIConfigDefault with enabled: false and no model,
+        # messages, or provider.
         #
-        # @return [AIConfig] a new disabled config
+        # @return [AIConfigDefault] a new disabled fallback config
         #
         def self.disabled
           new(enabled: false)
+        end
+
+        def initialize(enabled: false, model: nil, messages: nil, provider: nil)
+          @enabled = enabled
+          @messages = messages
+          @model = model
+          @provider = provider
         end
 
         def to_h
@@ -131,6 +141,48 @@ module LaunchDarkly
             model: @model&.to_h,
             provider: @provider&.to_h,
           }
+        end
+      end
+
+      #
+      # The AIConfig class represents an AI configuration returned by the SDK.
+      #
+      # Instances are created by {Client#completion_config} and always carry a
+      # tracker factory; see {#create_tracker}. Do not instantiate directly.
+      # For application-supplied fallback values, use {AIConfigDefault}.
+      #
+      class AIConfig
+        attr_reader :enabled, :messages, :model, :provider
+
+        def initialize(tracker_factory:, enabled: nil, model: nil, messages: nil, provider: nil)
+          @enabled = enabled
+          @messages = messages
+          @model = model
+          @provider = provider
+          @tracker_factory = tracker_factory
+        end
+
+        def to_h
+          {
+            _ldMeta: {
+              enabled: @enabled || false,
+            },
+            messages: @messages.is_a?(Array) ? @messages.map { |msg| msg&.to_h } : nil,
+            model: @model&.to_h,
+            provider: @provider&.to_h,
+          }
+        end
+
+        #
+        # Creates a new tracker for a fresh AI run. Each call mints a new
+        # runId (a UUIDv4) that LaunchDarkly uses to correlate the tracker's
+        # events in metrics views. Call this once per AI run; metrics from
+        # different runIds cannot be combined.
+        #
+        # @return [AIConfigTracker] a new tracker instance
+        #
+        def create_tracker
+          @tracker_factory.call
         end
       end
 
@@ -172,14 +224,26 @@ module LaunchDarkly
         #
         # @param key [String] The key of the configuration flag
         # @param context [LDContext] The context used when evaluating the flag
-        # @param default [AIConfig] The default value to use if the flag is not found
+        # @param default [AIConfigDefault] The default value to use if the flag is not found
         # @param variables [Hash] Optional variables for rendering messages
         # @return [AIConfig] An AIConfig instance containing the configuration data
         #
         def completion_config(key:, context:, default: nil, variables: nil)
           @ld_client.track(TRACK_USAGE_COMPLETION_CONFIG, context, key, 1)
 
-          _completion_config(key:, context:, default: default || AIConfig.disabled, variables:)
+          _completion_config(key:, context:, default: default || AIConfigDefault.disabled, variables:)
+        end
+
+        #
+        # Reconstructs a tracker from a resumption token, allowing deferred tracking
+        # (e.g. feedback from a different process).
+        #
+        # @param token [String] A resumption token obtained from AIConfigTracker#resumption_token
+        # @param context [LDContext] The context for track events
+        # @return [AIConfigTracker] A new tracker instance
+        #
+        def create_tracker(token:, context:)
+          AIConfigTracker.from_resumption_token(token: token, ld_client: @ld_client, context: context)
         end
 
         # @deprecated Use {#completion_config} instead.
@@ -226,20 +290,28 @@ module LaunchDarkly
             )
           end
 
-          tracker = LaunchDarkly::Server::AI::AIConfigTracker.new(
-            ld_client: @ld_client,
-            variation_key: variation.dig(:_ldMeta, :variationKey) || '',
-            config_key: key,
-            version: variation.dig(:_ldMeta, :version) || 1,
-            model_name: model&.name || '',
-            provider_name: provider_config&.name || '',
-            context:
-          )
+          variation_key = variation.dig(:_ldMeta, :variationKey) || ''
+          version = variation.dig(:_ldMeta, :version) || 1
+          model_name = model&.name || ''
+          provider_name = provider_config&.name || ''
+
+          tracker_factory = lambda {
+            LaunchDarkly::Server::AI::AIConfigTracker.new(
+              ld_client: @ld_client,
+              run_id: SecureRandom.uuid,
+              variation_key: variation_key,
+              config_key: key,
+              version: version,
+              model_name: model_name,
+              provider_name: provider_name,
+              context: context
+            )
+          }
 
           AIConfig.new(
             enabled: variation.dig(:_ldMeta, :enabled) || false,
             messages:,
-            tracker:,
+            tracker_factory:,
             model:,
             provider: provider_config
           )
