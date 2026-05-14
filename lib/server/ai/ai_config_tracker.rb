@@ -109,7 +109,7 @@ module LaunchDarkly
             ld_client: ld_client,
             run_id: payload['runId'],
             config_key: payload['configKey'],
-            variation_key: payload.fetch('variationKey', nil),
+            variation_key: payload.fetch('variationKey', ''),
             version: payload['version'],
             context: context,
             model_name: '',

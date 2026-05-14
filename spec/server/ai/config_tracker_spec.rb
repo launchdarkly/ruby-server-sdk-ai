@@ -553,6 +553,27 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
 
       restored.track_feedback(kind: :positive)
     end
+
+    it 'round-trips an empty variation_key as an empty string' do
+      empty_tracker = described_class.new(
+        ld_client: ld_client,
+        run_id: SecureRandom.uuid,
+        config_key: 'test-config',
+        context: context,
+        variation_key: '',
+        version: 1,
+        model_name: 'fakeModel',
+        provider_name: 'fakeProvider'
+      )
+
+      restored = described_class.from_resumption_token(
+        token: empty_tracker.resumption_token,
+        ld_client: ld_client,
+        context: context
+      )
+
+      expect(restored.variation_key).to eq('')
+    end
   end
 
   describe 'completion_config method tracking' do
