@@ -94,7 +94,7 @@ bedrock_client = Aws::BedrockRuntime::Client.new(
 
 # Pass a default for improved resiliency when the flag is unavailable or LaunchDarkly is unreachable; omit for a disabled default.
 # Example:
-#   default = LaunchDarkly::Server::AI::AIConfig.new(
+#   default = LaunchDarkly::Server::AI::AIConfigDefault.new(
 #     enabled: true,
 #     model: LaunchDarkly::Server::AI::ModelConfig.new(name: 'my-model'),
 #     provider: LaunchDarkly::Server::AI::ProviderConfig.new(name: 'my-provider'),

@@ -101,15 +101,26 @@ module LaunchDarkly
       end
 
       #
-      # The AIConfigDefault class represents a user-provided fallback AI configuration.
+      # The AIConfigDefault class represents a user-provided fallback AI
+      # configuration.
       #
       # Pass an instance of this class as the +default:+ parameter to
       # {Client#completion_config} to control the fallback values when a flag
       # is not found or cannot be evaluated.
       #
+      # This is an input-only type: it is what an application supplies to the
+      # SDK, never what the SDK returns. The SDK always returns an
+      # {AIConfig}, which carries a tracker factory; AIConfigDefault does not.
+      #
       class AIConfigDefault
         attr_reader :enabled, :messages, :model, :provider
 
+        #
+        # Returns a new AIConfigDefault with enabled: false and no model,
+        # messages, or provider.
+        #
+        # @return [AIConfigDefault] a new disabled fallback config
+        #
         def self.disabled
           new(enabled: false)
         end
@@ -136,14 +147,30 @@ module LaunchDarkly
       #
       # The AIConfig class represents an AI configuration returned by the SDK.
       #
-      # Instances are created by {Client#completion_config} and always include
-      # a {#create_tracker} factory. Do not instantiate directly — use
-      # {AIConfigDefault} for fallback values.
+      # Instances are created by {Client#completion_config} and always carry a
+      # tracker factory; see {#create_tracker}. Do not instantiate directly.
+      # For application-supplied fallback values, use {AIConfigDefault}.
       #
-      class AIConfig < AIConfigDefault
+      class AIConfig
+        attr_reader :enabled, :messages, :model, :provider
+
         def initialize(tracker_factory:, enabled: nil, model: nil, messages: nil, provider: nil)
-          super(enabled: enabled, model: model, messages: messages, provider: provider)
+          @enabled = enabled
+          @messages = messages
+          @model = model
+          @provider = provider
           @tracker_factory = tracker_factory
+        end
+
+        def to_h
+          {
+            _ldMeta: {
+              enabled: @enabled || false,
+            },
+            messages: @messages.is_a?(Array) ? @messages.map { |msg| msg&.to_h } : nil,
+            model: @model&.to_h,
+            provider: @provider&.to_h,
+          }
         end
 
         #

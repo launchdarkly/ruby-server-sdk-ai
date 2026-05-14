@@ -451,6 +451,20 @@ RSpec.describe LaunchDarkly::Server::AI do
       end
     end
 
+    describe LaunchDarkly::Server::AI::AIConfig do
+      it 'does not expose a public disabled class method' do
+        expect(described_class).not_to respond_to(:disabled)
+      end
+
+      it 'requires a tracker_factory to construct' do
+        expect { described_class.new(enabled: false) }.to raise_error(ArgumentError, /tracker_factory/)
+      end
+
+      it 'is not a subclass of AIConfigDefault' do
+        expect(described_class.ancestors).not_to include(LaunchDarkly::Server::AI::AIConfigDefault)
+      end
+    end
+
     describe LaunchDarkly::Server::AI::AIConfigDefault do
       it 'defaults to a disabled configuration' do
         config = described_class.new
