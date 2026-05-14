@@ -20,6 +20,10 @@ jobs:
 
   release-sdk:
     needs: ['release-please']
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
     if: ${{ needs.release-please.outputs.release-created == 'true' }}
     uses: ./.github/workflows/publish.yml
     with:
