@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.3.0...0.4.0) (2026-05-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* Replace tracker tuple from completion_config with AIConfig#create_tracker factory
+* Track each AIConfigTracker metric at most once per tracker
+* Add per-execution runId, at-most-once tracking, and cross-process tracker resumption
+
+### Features
+
+* Add Client#create_tracker(token:, context:) to resume a tracker across processes ([20f06f1](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/20f06f1f24a42692953ae44cebea70aaa416b29d))
+* Add per-execution runId to correlate AIConfigTracker events ([20f06f1](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/20f06f1f24a42692953ae44cebea70aaa416b29d))
+* Add per-execution runId, at-most-once tracking, and cross-process tracker resumption ([20f06f1](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/20f06f1f24a42692953ae44cebea70aaa416b29d))
+* Replace tracker tuple from completion_config with AIConfig#create_tracker factory ([20f06f1](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/20f06f1f24a42692953ae44cebea70aaa416b29d))
+* Track each AIConfigTracker metric at most once per tracker ([20f06f1](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/20f06f1f24a42692953ae44cebea70aaa416b29d))
+
 ## [0.3.0](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.2.2...0.3.0) (2026-03-05)
 
 
