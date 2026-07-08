@@ -30,7 +30,8 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
   end
 
   let(:context) { LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' }) }
-  let(:tracker_flag_data) { { runId: kind_of(String), variationKey: 'test-variation', configKey: 'test-config', version: 1, modelName: 'fakeModel', providerName: 'fakeProvider' } }
+  let(:tracker_flag_data) {
+ { runId: kind_of(String), variationKey: 'test-variation', configKey: 'test-config', version: 1, modelName: 'fakeModel', providerName: 'fakeProvider', modelVersion: 1 } }
   let(:tracker) do
     described_class.new(
       ld_client: ld_client,
@@ -461,9 +462,48 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       expect(flag_data).to include(
         runId: kind_of(String),
         modelName: 'fakeModel',
-        providerName: 'fakeProvider'
+        providerName: 'fakeProvider',
+        modelVersion: 1
       )
       expect(flag_data[:runId]).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+    end
+
+    it 'includes modelKey when set' do
+      tracker_with_key = described_class.new(
+        ld_client: ld_client,
+        run_id: SecureRandom.uuid,
+        config_key: 'test-config',
+        context: context,
+        variation_key: 'test-variation',
+        version: 1,
+        model_name: 'fakeModel',
+        provider_name: 'fakeProvider',
+        model_key: 'my-model',
+        model_version: 2
+      )
+
+      flag_data = tracker_with_key.send(:flag_data)
+      expect(flag_data[:modelKey]).to eq('my-model')
+      expect(flag_data[:modelVersion]).to eq(2)
+    end
+
+    it 'omits modelKey when empty' do
+      tracker_with_empty_key = described_class.new(
+        ld_client: ld_client,
+        run_id: SecureRandom.uuid,
+        config_key: 'test-config',
+        context: context,
+        variation_key: 'test-variation',
+        version: 1,
+        model_name: 'fakeModel',
+        provider_name: 'fakeProvider',
+        model_key: '',
+        model_version: 3
+      )
+
+      flag_data = tracker_with_empty_key.send(:flag_data)
+      expect(flag_data).not_to have_key(:modelKey)
+      expect(flag_data[:modelVersion]).to eq(3)
     end
   end
 
@@ -478,12 +518,14 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       expect(decoded['version']).to eq(1)
     end
 
-    it 'does not include modelName or providerName' do
+    it 'does not include modelName, providerName, modelKey, or modelVersion' do
       token = tracker.resumption_token
       decoded = JSON.parse(Base64.urlsafe_decode64(token))
 
       expect(decoded).not_to have_key('modelName')
       expect(decoded).not_to have_key('providerName')
+      expect(decoded).not_to have_key('modelKey')
+      expect(decoded).not_to have_key('modelVersion')
     end
 
     it 'contains the same runId as the tracker flag data' do
@@ -512,7 +554,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
       expect(restored.send(:flag_data)[:version]).to eq(1)
     end
 
-    it 'sets modelName and providerName to empty strings' do
+    it 'sets modelName and providerName to empty strings and modelVersion to 1' do
       token = tracker.resumption_token
 
       restored = described_class.from_resumption_token(
@@ -523,6 +565,8 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
 
       expect(restored.send(:flag_data)[:modelName]).to eq('')
       expect(restored.send(:flag_data)[:providerName]).to eq('')
+      expect(restored.send(:flag_data)[:modelVersion]).to eq(1)
+      expect(restored.send(:flag_data)).not_to have_key(:modelKey)
     end
 
     it 'can track events with the restored tracker' do
@@ -542,6 +586,7 @@ RSpec.describe LaunchDarkly::Server::AI::AIConfigTracker do
         version: 1,
         modelName: '',
         providerName: '',
+        modelVersion: 1,
       }
 
       expect(ld_client).to receive(:track).with(

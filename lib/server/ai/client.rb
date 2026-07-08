@@ -38,12 +38,14 @@ module LaunchDarkly
       # The ModelConfig class represents an AI model configuration.
       #
       class ModelConfig
-        attr_reader :name
+        attr_reader :name, :model_key, :model_version
 
-        def initialize(name:, parameters: {}, custom: {})
+        def initialize(name:, parameters: {}, custom: {}, model_key: nil, model_version: nil)
           @name = name
           @parameters = parameters
           @custom = custom
+          @model_key = model_key
+          @model_version = model_version
         end
 
         #
@@ -75,11 +77,14 @@ module LaunchDarkly
         end
 
         def to_h
-          {
+          result = {
             name: @name,
             parameters: @parameters,
             custom: @custom,
           }
+          result[:modelKey] = @model_key if @model_key && !@model_key.empty?
+          result[:modelVersion] = @model_version unless @model_version.nil?
+          result
         end
       end
 
@@ -280,13 +285,17 @@ module LaunchDarkly
             provider_config = ProviderConfig.new(provider_config.fetch(:name, ''))
           end
 
+          tracked_model_version = 1
           if (model = variation[:model]) && model.is_a?(Hash)
             parameters = variation[:model][:parameters]
             custom = variation[:model][:custom]
+            tracked_model_version = (variation[:model][:modelVersion] || 1).to_i
             model = ModelConfig.new(
               name: variation[:model][:name],
               parameters: parameters,
-              custom: custom
+              custom: custom,
+              model_key: variation[:model][:modelKey],
+              model_version: tracked_model_version
             )
           end
 
@@ -294,6 +303,7 @@ module LaunchDarkly
           version = variation.dig(:_ldMeta, :version) || 1
           model_name = model&.name || ''
           provider_name = provider_config&.name || ''
+          model_key = model&.model_key
 
           tracker_factory = lambda {
             LaunchDarkly::Server::AI::AIConfigTracker.new(
@@ -304,6 +314,8 @@ module LaunchDarkly
               version: version,
               model_name: model_name,
               provider_name: provider_name,
+              model_key: model_key,
+              model_version: tracked_model_version,
               context: context
             )
           }
