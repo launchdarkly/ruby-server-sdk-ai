@@ -285,16 +285,15 @@ module LaunchDarkly
             provider_config = ProviderConfig.new(provider_config.fetch(:name, ''))
           end
 
-          tracked_model_version = 1
+          tracked_model_version = (variation.dig(:_ldMeta, :modelVersion) || 1).to_i
           if (model = variation[:model]) && model.is_a?(Hash)
             parameters = variation[:model][:parameters]
             custom = variation[:model][:custom]
-            tracked_model_version = (variation[:model][:modelVersion] || 1).to_i
             model = ModelConfig.new(
               name: variation[:model][:name],
               parameters: parameters,
               custom: custom,
-              model_key: variation[:model][:modelKey],
+              model_key: variation.dig(:_ldMeta, :modelKey),
               model_version: tracked_model_version
             )
           end

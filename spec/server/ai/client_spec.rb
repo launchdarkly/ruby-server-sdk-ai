@@ -93,12 +93,10 @@ RSpec.describe LaunchDarkly::Server::AI do
         {
           model: {
             name: 'gpt-4',
-            modelKey: 'my-model',
-            modelVersion: 2,
           },
           provider: { name: 'openai' },
           messages: [],
-          _ldMeta: { enabled: true, variationKey: 'v1', version: 1 },
+          _ldMeta: { enabled: true, variationKey: 'v1', version: 1, modelKey: 'my-model', modelVersion: 2 },
         }
       )
       .variation_for_all(0))
@@ -487,10 +485,10 @@ RSpec.describe LaunchDarkly::Server::AI do
         td.update(td.flag('model-config-version-only')
           .variations(
             {
-              model: { name: 'gpt-4', modelVersion: 3 },
+              model: { name: 'gpt-4' },
               provider: { name: 'openai' },
               messages: [],
-              _ldMeta: { enabled: true, variationKey: 'v1', version: 1 },
+              _ldMeta: { enabled: true, variationKey: 'v1', version: 1, modelVersion: 3 },
             }
           )
           .variation_for_all(0))
