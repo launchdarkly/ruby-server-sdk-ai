@@ -127,27 +127,6 @@ RSpec.describe LaunchDarkly::Server::AI do
       expect(model.custom('name')).to be_nil
     end
 
-    it 'to_h omits modelKey and modelVersion when unset' do
-      model = described_class.new(name: 'fakeModel', parameters: { temperature: 0.5 })
-      expect(model.model_key).to be_nil
-      expect(model.model_version).to be_nil
-      result = model.to_h
-      expect(result).not_to have_key(:modelKey)
-      expect(result).not_to have_key(:modelVersion)
-    end
-
-    it 'to_h includes modelKey and modelVersion when set' do
-      model = described_class.new(name: 'fakeModel', model_key: 'my-model', model_version: 2)
-      result = model.to_h
-      expect(result[:modelKey]).to eq('my-model')
-      expect(result[:modelVersion]).to eq(2)
-    end
-
-    it 'to_h omits empty modelKey' do
-      model = described_class.new(name: 'fakeModel', model_key: '')
-      result = model.to_h
-      expect(result).not_to have_key(:modelKey)
-    end
   end
 
   describe LaunchDarkly::Server::AI::Client do
@@ -445,15 +424,6 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(flag_data[:providerName]).to eq('fakeProvider')
         expect(flag_data[:modelVersion]).to eq(1)
         expect(flag_data).not_to have_key(:modelKey)
-      end
-
-      it 'reads modelKey and modelVersion from flag payload' do
-        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
-        config = ai_client.completion_config(key: 'model-config-with-key-version', context:)
-
-        expect(config.model).not_to be_nil
-        expect(config.model.model_key).to eq('my-model')
-        expect(config.model.model_version).to eq(2)
       end
 
       it 'stamps modelKey and modelVersion on track data' do

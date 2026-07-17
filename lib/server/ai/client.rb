@@ -38,14 +38,12 @@ module LaunchDarkly
       # The ModelConfig class represents an AI model configuration.
       #
       class ModelConfig
-        attr_reader :name, :model_key, :model_version
+        attr_reader :name
 
-        def initialize(name:, parameters: {}, custom: {}, model_key: nil, model_version: nil)
+        def initialize(name:, parameters: {}, custom: {})
           @name = name
           @parameters = parameters
           @custom = custom
-          @model_key = model_key
-          @model_version = model_version
         end
 
         #
@@ -77,14 +75,11 @@ module LaunchDarkly
         end
 
         def to_h
-          result = {
+          {
             name: @name,
             parameters: @parameters,
             custom: @custom,
           }
-          result[:modelKey] = @model_key if @model_key && !@model_key.empty?
-          result[:modelVersion] = @model_version unless @model_version.nil?
-          result
         end
       end
 
@@ -292,9 +287,7 @@ module LaunchDarkly
             model = ModelConfig.new(
               name: variation[:model][:name],
               parameters: parameters,
-              custom: custom,
-              model_key: variation.dig(:_ldMeta, :modelKey),
-              model_version: tracked_model_version
+              custom: custom
             )
           end
 
@@ -302,7 +295,7 @@ module LaunchDarkly
           version = variation.dig(:_ldMeta, :version) || 1
           model_name = model&.name || ''
           provider_name = provider_config&.name || ''
-          model_key = model&.model_key
+          model_key = variation.dig(:_ldMeta, :modelKey)
 
           tracker_factory = lambda {
             LaunchDarkly::Server::AI::AIConfigTracker.new(
