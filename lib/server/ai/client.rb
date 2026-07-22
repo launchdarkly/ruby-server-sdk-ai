@@ -280,7 +280,6 @@ module LaunchDarkly
             provider_config = ProviderConfig.new(provider_config.fetch(:name, ''))
           end
 
-          tracked_model_version = (variation.dig(:_ldMeta, :modelVersion) || 1).to_i
           if (model = variation[:model]) && model.is_a?(Hash)
             parameters = variation[:model][:parameters]
             custom = variation[:model][:custom]
@@ -296,6 +295,7 @@ module LaunchDarkly
           model_name = model&.name || ''
           provider_name = provider_config&.name || ''
           model_key = variation.dig(:_ldMeta, :modelKey)
+          model_version = (variation.dig(:_ldMeta, :modelVersion) || 1).to_i
 
           tracker_factory = lambda {
             LaunchDarkly::Server::AI::AIConfigTracker.new(
@@ -307,7 +307,7 @@ module LaunchDarkly
               model_name: model_name,
               provider_name: provider_name,
               model_key: model_key,
-              model_version: tracked_model_version,
+              model_version: model_version,
               context: context
             )
           }
