@@ -51,7 +51,8 @@ module LaunchDarkly
       # tracker reconstructed in another process share the original runId.
       #
       class AIConfigTracker
-        attr_reader :ld_client, :config_key, :context, :variation_key, :version, :summary, :model_name, :provider_name
+        attr_reader :ld_client, :config_key, :context, :variation_key, :version, :summary, :model_name, :provider_name,
+                    :model_key, :model_version
 
         #
         # Initialize a new AIConfigTracker instance.
@@ -62,15 +63,20 @@ module LaunchDarkly
         # @param version [Integer] The version number
         # @param model_name [String] The name of the AI model being used
         # @param provider_name [String] The name of the AI provider
+        # @param model_key [String, nil] The stable, unique key of the model used
+        # @param model_version [Integer] The pinned version of the model used
         # @param context [LDContext] The context used for the flag evaluation
         #
-        def initialize(ld_client:, run_id:, config_key:, variation_key:, version:, context:, model_name:, provider_name:)
+        def initialize(ld_client:, run_id:, config_key:, variation_key:, version:, context:, model_name:, provider_name:,
+                       model_key: nil, model_version: 1)
           @ld_client = ld_client
           @variation_key = variation_key
           @config_key = config_key
           @version = version
           @model_name = model_name
           @provider_name = provider_name
+          @model_key = model_key
+          @model_version = model_version
           @context = context
           @summary = MetricSummary.new
           @run_id = run_id
@@ -82,7 +88,7 @@ module LaunchDarkly
         # a tracker in a different process (e.g. for deferred feedback).
         #
         # The token contains: runId, configKey, variationKey, version.
-        # modelName and providerName are NOT included.
+        # modelName, providerName, modelKey, and modelVersion are NOT included.
         #
         # @return [String] the resumption token
         #
@@ -328,8 +334,10 @@ module LaunchDarkly
             version: @version,
             modelName: @model_name,
             providerName: @provider_name,
+            modelVersion: @model_version,
           }
           data[:variationKey] = @variation_key if @variation_key && !@variation_key.empty?
+          data[:modelKey] = @model_key if @model_key && !@model_key.empty?
           data
         end
 

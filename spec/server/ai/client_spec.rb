@@ -88,6 +88,19 @@ RSpec.describe LaunchDarkly::Server::AI do
         )
         .variation_for_all(1))
 
+    data_source.update(data_source.flag('model-config-with-key-version')
+      .variations(
+        {
+          model: {
+            name: 'gpt-4',
+          },
+          provider: { name: 'openai' },
+          messages: [],
+          _ldMeta: { enabled: true, variationKey: 'v1', version: 1, modelKey: 'my-model', modelVersion: 2 },
+        }
+      )
+      .variation_for_all(0))
+
     data_source
   end
 
@@ -113,6 +126,7 @@ RSpec.describe LaunchDarkly::Server::AI do
       expect(model.custom('non-existent')).to be_nil
       expect(model.custom('name')).to be_nil
     end
+
   end
 
   describe LaunchDarkly::Server::AI::Client do
@@ -408,6 +422,55 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(flag_data[:version]).to eq(1)
         expect(flag_data[:modelName]).to eq('fakeModel')
         expect(flag_data[:providerName]).to eq('fakeProvider')
+        expect(flag_data[:modelVersion]).to eq(1)
+        expect(flag_data).not_to have_key(:modelKey)
+      end
+
+      it 'stamps modelKey and modelVersion on track data' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config-with-key-version', context:)
+
+        tracker = config.create_tracker
+        expect(ld_client).to receive(:track).with(
+          '$ld:ai:generation:success',
+          context,
+          hash_including(modelKey: 'my-model', modelVersion: 2),
+          1
+        )
+        tracker.track_success
+      end
+
+      it 'defaults modelVersion to 1 and omits modelKey when absent from payload' do
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config', context:, variables: { 'name' => 'World' })
+
+        tracker = config.create_tracker
+        flag_data = tracker.send(:flag_data)
+
+        expect(flag_data[:modelVersion]).to eq(1)
+        expect(flag_data).not_to have_key(:modelKey)
+      end
+
+      it 'uses explicit modelVersion from payload when modelKey is absent' do
+        td.update(td.flag('model-config-version-only')
+          .variations(
+            {
+              model: { name: 'gpt-4' },
+              provider: { name: 'openai' },
+              messages: [],
+              _ldMeta: { enabled: true, variationKey: 'v1', version: 1, modelVersion: 3 },
+            }
+          )
+          .variation_for_all(0))
+
+        context = LaunchDarkly::LDContext.create({ key: 'user-key', kind: 'user' })
+        config = ai_client.completion_config(key: 'model-config-version-only', context:)
+
+        tracker = config.create_tracker
+        flag_data = tracker.send(:flag_data)
+
+        expect(flag_data[:modelVersion]).to eq(3)
+        expect(flag_data).not_to have_key(:modelKey)
       end
 
       it 'create_tracker returns a tracker even for disabled configs from evaluation' do
@@ -434,6 +497,8 @@ RSpec.describe LaunchDarkly::Server::AI do
         expect(restored.send(:flag_data)[:configKey]).to eq('model-config')
         expect(restored.send(:flag_data)[:modelName]).to eq('')
         expect(restored.send(:flag_data)[:providerName]).to eq('')
+        expect(restored.send(:flag_data)[:modelVersion]).to eq(1)
+        expect(restored.send(:flag_data)).not_to have_key(:modelKey)
       end
 
       it 'each tracker has independent at-most-once tracking' do

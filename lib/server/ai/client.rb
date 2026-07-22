@@ -294,6 +294,8 @@ module LaunchDarkly
           version = variation.dig(:_ldMeta, :version) || 1
           model_name = model&.name || ''
           provider_name = provider_config&.name || ''
+          model_key = variation.dig(:_ldMeta, :modelKey)
+          model_version = (variation.dig(:_ldMeta, :modelVersion) || 1).to_i
 
           tracker_factory = lambda {
             LaunchDarkly::Server::AI::AIConfigTracker.new(
@@ -304,6 +306,8 @@ module LaunchDarkly
               version: version,
               model_name: model_name,
               provider_name: provider_name,
+              model_key: model_key,
+              model_version: model_version,
               context: context
             )
           }
