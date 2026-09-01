@@ -8,9 +8,7 @@
       "aiSdkNames": ["launchdarkly-server-sdk-ai"],
       "features": {
         "aiCompletionConfig": { "introduced": "0.1" },
-        "aiTrackMetrics":     { "introduced": "0.1" },
-        "contexts":           { "introduced": "0.1" },
-        "experimentation":    { "introduced": "0.1" }
+        "aiTrackMetrics":     { "introduced": "0.1" }
       }
     }
   }
