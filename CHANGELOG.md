@@ -5,14 +5,8 @@
 
 ### Features
 
-* **server-ai:** stamp modelKey and modelVersion on AI usage events (AIC-2857) ([e6ae12d](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/e6ae12ddb2e3b1b7a20f88987460e196e3abab63))
 * **server-ai:** stamp modelKey and modelVersion on AI usage events (AIC-2857) ([#36](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/36)) ([2f7fda4](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/2f7fda4d57b09483cf15fda6e3102e24b1eecb27))
 
-
-### Bug Fixes
-
-* **server-ai:** rename tracked_model_version to model_version ([503ccc5](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/503ccc5bf4e7b9d57cadd9e427a535482fc4e58c))
-* **server-ai:** stop exposing model_key/model_version on ModelConfig ([25d962e](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/25d962e7f238ba834c1f654f9beab0bb72733e96))
 
 ## [0.4.0](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.3.0...0.4.0) (2026-05-15)
 
