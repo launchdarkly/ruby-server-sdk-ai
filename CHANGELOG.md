@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.4.0...0.5.0) (2026-09-02)
+
+
+### Features
+
+* **server-ai:** stamp modelKey and modelVersion on AI usage events (AIC-2857) ([#36](https://github.com/launchdarkly/ruby-server-sdk-ai/issues/36)) ([2f7fda4](https://github.com/launchdarkly/ruby-server-sdk-ai/commit/2f7fda4d57b09483cf15fda6e3102e24b1eecb27))
+
+
 ## [0.4.0](https://github.com/launchdarkly/ruby-server-sdk-ai/compare/0.3.0...0.4.0) (2026-05-15)
 
 
