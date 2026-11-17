@@ -9,9 +9,9 @@ jobs:
       id-token: write # Needed if using OIDC to get release secrets.
       contents: write # Needed in this case to write github pages.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: ruby/setup-ruby@319994f95fa847cf3fb3cd3dbe89f6dcde9f178f # v1
+      - uses: ruby/setup-ruby@4e97ecde5048e1e0816923020652678063ffbf65 # v1.339.0
         with:
           ruby-version: 3.1
 
